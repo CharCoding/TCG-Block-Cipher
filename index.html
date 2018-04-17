@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>TCG Block Cipher</title>
+  <meta charset="utf-8" />
+  <style type="text/css">
+  * { font-size: 20px; }
+  body { margin: 20px 80px; }
+  </style>
+</head>
+<body>
+  <form autocomplete="on">
+    <select id="keyFormat">
+      <option value="0" selected="selected">Auto-detect</option>
+      <option value="1">Text</option>
+      <option value="2">Hexadecimal</option>
+      <option value="3">Base64</option>
+    </select>
+    <input type="text" id="key" placeholder="Key" size="32" />
+    <input type="button" id="generateKey" value="Generate Key" /><br />
+    <input type="button" id="encrypt" value="Encrypt" />
+    <input type="button" id="clearPlain" value="Clear" /> Mode:
+    <select id="mode">
+      <option value="0">ECB</option>
+      <option value="1" selected="selected">CTR</option>
+    </select>
+    <br />
+    <input type="text" id="plain" placeholder="Plaintext" size="128" /><br />
+    <input type="button" id="decrypt" value="Decrypt" />
+    <input type="button" id="clearCipher" value="Clear" />
+    <select id="cipherFormat">
+      <option value="0" selected="selected">Auto-detect</option>
+      <option value="1">Text</option>
+      <option value="2">Hexadecimal</option>
+      <option value="3">Base64</option>
+    </select><br />
+    <input type="text" id="cipher" placeholder="Ciphertext" size="128" /><br />
+    <input type="reset" value="Reset" />
+    <p id="info">
+      Triangular Congruential Generator Block Cipher by <a href="http://github.com/CharCoding" alt="GitHub">CharCoding</a>, 2018, Some Rights Reserved.<br />
+      <b>DISCLAIMER: </b>I know next to nothing about cryptography and I just committed a sin by "rolling my own crypto". I am not responsible for any important data
+      leaked through this cipher. Use at your own risk, and use industrial strength RSA or AES for encrypting important information instead.<br />
+      That being said, you're always welcome to break this cipher and show me how you did it.
+    </p>
+  </form>
+  <script type="text/javascript">'use strict';
+  /* Triangular Congruential Generator Block Cipher
+   * Key: 128 bit
+   * Block: 128 bit
+   * Rounds: 4
+   * Security: none
+   * Mode of operation: ECB
+   */
+  const FF = 255, FFFF = 65535, // Constants and utility functions
+  utf8Encode = msg => unescape(encodeURIComponent(msg)), // Screw UTF-8 support, too much work.
+  utf8Decode = msg => {
+    try {
+      return decodeURIComponent(escape(msg));
+    } catch(e){
+      return msg;
+    }
+  },
+  A2S = a => String.fromCharCode.apply(null, new Uint8Array(a.buffer)).replace(/\0+$/, ''), // Magic
+  S2A = s => new Uint32Array(Uint8Array.from(s, e => e.charCodeAt(0)).buffer), // More magic
+  A2HEX = a => a.reduce((str, e) => str += (4294967296 + e).toString(16).slice(1), ''), // Whaaaaat
+  HEX2A = s => Uint32Array.from(s.replace(/.{1,8}/g, ' 0x$&').split(' ').slice(1)), // It works and I have no idea why
+  hammingWeight = word => { // count bits set in 32 bit ints
+    word = word - ((word >> 1) & 1431655765);
+    word = (word & 858993459) + ((word >> 2) & 858993459);
+    return ((word + (word >> 4) & 252645135) * 16843009) >>> 24;
+  }, ROTR = (word, rotation) => word >>> rotation | word << (32 - rotation),
+  reverseBits = word => {
+    word = (word >> 1 & 1431655765) | (word & 1431655765) << 1;
+    word = (word >> 2 & 858993459)  | (word & 858993459)  << 2;
+    word = (word >> 4 & 252645135)  | (word & 252645135)  << 4;
+    word = (word >> 8 & 16711935)   | (word & 16711935)   << 8;
+    return word >>> 16 | word << 16;
+  }, analyze = (a, b) => { // this was for checking how many bits changed between input and output
+    if(typeof a == 'string') {
+      a = S2A(a);
+      b = S2A(b);
+    }
+    for(let i = a.length; i--;) console.log(hammingWeight(a[i] ^ b[i]));
+  },
+  // Regular expressions for detecting format and replacing control characters
+  HEXADECIMAL = /^(?:[\da-f]{2})*$/i,
+  BASE64 = /^(?:[A-Z0-9+\/]{4})*(?:[A-Z0-9+\/]{2}==|[A-Z0-9+\/]{3}=)?$/i,
+  CONTROLS = /[\0- \x7f]/g,
+  PICTURES = /[\u2400-\u2420]/g,
+  DELETE = /\u2421/g;
+
+  // Main TCG Cipher object
+  function* TCG(a, b, m, x){ // Literally the entire cipher relies on the "assumed" lack of correlation between consecutive numbers in a sequence...
+    const i = x; // So, if this happens to be not as good as I thought (which probably is the case)
+    do yield x = a * (x * x + x >>> 1) + b & m; // the cipher is 100% insecure.
+    while(x != i); // Otherwise the cipher is 99% insecure.
+  } // In other words, never use this cipher for anything at all.
+
+  // Generator constants for multiplier and adder
+  TCG.A16 = Int16Array.of(19,21,25,29,31,31,39,41,43,47,49,53,55,63,67,75,77,83,83,89,91,93,99,107,113,115,117,123,125,127,131,135,141,149,151,157,159,171,173,175,181,193,195,199,209,211,213,219,223,225,227,235,237,239,249,251,259,261,263,267,269,271,279,289,291,299,303,305,311,315,321,331,343,347,351,355,357,359,377,381,383,385,387,389,395,399,403,407,409,413,433,437,441,451,453,459,461,469,471,473,475,477,491,493,503,505,507,509,517,519,521,531,533,535,551,555,557,559,563,571,575,579,581,587,591,595,599,601);
+  TCG.B16 = Uint16Array.of(7027,48722,29554,25898,42907,48703,21679,22404,48667,27421,50846,57678,54379,58499,26801,12849,37470,33019,45563,23642,32973,39758,60063,56613,44510,26783,43934,57369,9214,31739,16427,53951,43566,25122,56247,46232,53147,47357,52188,55259,45866,26558,57649,17231,20062,21897,56702,64117,5269,35366,58599,38833,61604,61409,34594,54241,6641,35436,33811,28759,57962,43583,30493,64588,48941,3871,13457,44596,13573,62497,33676,24865,43943,11953,54443,39025,38414,23359,42764,4564,62827,58522,21765,56806,61667,37519,27881,16021,55870,25436,55052,30894,34226,22893,27772,27569,46106,502,24277,32614,54185,24914,15991,21578,16179,13026,38607,52388,31222,39559,61526,349,46702,49011,45121,64679,14830,21013,3781,9355,41015,33467,19298,52901,28295,47273,37667,22978);
+  TCG.A18 = Int8Array.of(7, 23, 29, 31);
+  TCG.B18 = Int32Array.of(231859, 42211, 200860, 52257);
+
+  // Important crypto functions
+  TCG.padMessage = (str, chunk = 16) => str + new Array(chunk - (str.length - 1 & chunk - 1)).join('\0');
+  TCG.generator = (gen, seed) => { // return a generator from given parameter and seed
+    if(gen & 128)
+      return TCG(65536 - TCG.A16[gen & 127], 32767 ^ TCG.B16[gen & 127], FFFF, seed);
+    else
+      return TCG(TCG.A16[gen], TCG.B16[gen], FFFF, seed);
+  };
+  TCG.longGenerator = (gen, seed) => TCG(TCG.A18[gen], TCG.B18[gen], 262143, seed);
+  TCG.initKey = str => { // If key is too short it is repeated, if key is too long it is added on top
+    const k = new Uint32Array(4), input = S2A(TCG.padMessage(str, 4));
+    for(let i = Math.max(input.length, 4); i--;) k[i & 3] += input[i % input.length];
+    return k;
+  };
+  TCG.keygen = k => { // SECURITY THROUGH OBSCURITY REeeEEeEeeEeeEEeEEeeEeEEeEeeEEeE
+    const HW = hammingWeight(k[0]) + hammingWeight(k[1]) + hammingWeight(k[2]) + hammingWeight(k[3]),
+    SUM = k[0] + k[1] + k[2] + k[3],
+    PRODUCT = Math.imul(Math.imul(k[0],k[1]),Math.imul(k[2],k[3])),
+    G = TCG.longGenerator(HW & 3, SUM & 262143), G8 = [
+      TCG.generator(G.next().value & FF, G.next().value >>> 2),
+      TCG.generator(G.next().value >>> 10, G.next().value & FFFF),
+      TCG.generator(~G.next().value & FF, G.next().value >>> 1 & FFFF),
+      TCG.generator(~G.next().value >>> 10 & FF, PRODUCT & FFFF),
+      TCG.generator(k[0] & FF, G.next().value >>> 2),
+      TCG.generator(k[1] >>> 8 & FF, G.next().value & FFFF),
+      TCG.generator(~k[2] >>> 16 & FF, G.next().value >>> 1 & FFFF),
+      TCG.generator(~k[3] >>> 24, PRODUCT >>> 16)
+    ], nk = k.map(reverseBits);
+    for(let i = 32; i--;)
+      nk[i & 3] ^= ROTR(G8[G.next().value & 7].next().value, i);
+    return nk;
+  };
+  TCG.xor = k => { // these functions return functions that take the Uint32Array as input
+    return arr => { // P.S. xor is the same as it's reverse, unlike sbox and pbox.
+      for(let i = arr.length; i--;) arr[i] ^= k[i & 3];
+      return arr;
+    };
+  };
+  TCG.sbox = (k, reverse) => { // 16-bit word substitution
+    const gen = ROTR(k[0] << 1 ^ k[1] >>> 1, hammingWeight(k[2])) & FFFF, seed = ~k[2] ^ k[3] << 3 ^ k[3] >>> 4,
+    G0 = TCG.generator(gen >>> 8, seed >>> 16), G1 = TCG.generator(gen & FF, seed & FFFF),
+    SBOX = new Uint16Array(65536); // rip memory (32KB)
+    if(reverse)
+      for(let i = 65536; i--;) SBOX[G1.next().value] = G0.next().value;
+    else
+      for(let i = 65536; i--;) SBOX[G0.next().value] = G1.next().value;
+    return arr => {
+      for(let i = arr.length; i--;) arr[i] = SBOX[arr[i] >>> 16] << 16 | SBOX[arr[i] & FFFF];
+      return arr;
+    };
+  };
+  TCG.pbox = (k, reverse) => { // 128-bit block permutation
+    const gen = ROTR(k[3] << 2 ^ k[2] >>> 1, hammingWeight(k[1])) & FF, seed = reverseBits(k[1]) ^ k[0] << 4 ^ k[0] >>> 3,
+    G = TCG.generator(gen, seed & FFFF);
+    let order = [];
+    for(let i = 0; i < 128; i++) order[G.next().value] = i;
+    order = Uint8Array.from(order.filter(n => true));
+    return reverse ? arr => { // NOTE: This is a ternary operator just to confuse everyone
+      for(let i = 0, l = arr.length; i < l; i += 4){
+        const tempArr = arr.slice(i, i + 4);
+        for(let j = i; j < i + 4; j++) arr[j] = 0;
+        for(let j = 128; j--;) arr[i + (order[j] >>> 5)] |= ((tempArr[j >>> 5] >>> (j & 31)) & 1) << (order[j] & 31);
+      }
+      return arr;
+    } : arr => {
+      for(let i = 0, l = arr.length; i < l; i += 4){
+        const tempArr = arr.slice(i, i + 4);
+        for(let j = i; j < i + 4; j++) arr[j] = 0;
+        for(let j = 128; j--;) arr[i + (j >>> 5)] |= ((tempArr[order[j] >>> 5] >>> (order[j] & 31)) & 1) << (j & 31);
+      }
+      return arr;
+    };
+  };
+  // Using promises to reset call stack, hopefully no crashes.
+  // It's really easy to see the order of execution like this.
+  // Also the syntax is dank af
+  TCG.stream = (length, k0, k1, k2, k3, IV) => {
+    const stream = new Uint32Array(length), G = TCG.longGenerator((IV[0] ^ IV[3] & 3, (IV[1] ^ IV[2]) & 262143));
+    for(let i = length; i--;){
+      stream[i] = IV[i & 3];
+      if((i & 3) == 3) stream[i] = (stream[i] & -262144) | G.next().value;
+    }
+    TCG.xor(k0)(stream);
+    TCG.sbox(k0)(stream);
+    TCG.pbox(k0)(stream);
+    TCG.xor(k1)(stream);
+    TCG.sbox(k1)(stream);
+    TCG.pbox(k1)(stream);
+    TCG.xor(k2)(stream);
+    TCG.sbox(k2)(stream);
+    TCG.pbox(k2)(stream);
+    TCG.xor(k3)(stream);
+    TCG.sbox(k3)(stream);
+    return arr => {
+      for(let i = length; i--;)
+        arr[i] ^= stream[i];
+      return arr;
+    }
+  }
+  TCG.encrypt = data => {
+    const then = performance.now(), k = TCG.initKey(key.value), // Let's measure the time cuz why not
+    k0 = TCG.keygen(k), k1 = TCG.keygen(k0), k2 = TCG.keygen(k1), k3 = TCG.keygen(k2);
+    data = S2A(TCG.padMessage(data));
+    let encryption = Promise.resolve(data);
+    if(+mode.value) {
+      const IV = crypto.getRandomValues(new Uint32Array(4));
+      encryption = encryption
+      .then(TCG.stream(data.length, k0, k1, k2, k3, IV))
+      .then(x => {
+        const result = new Uint32Array(x.length + 4);
+        result.set(IV);
+        result.set(x, 4);
+        return result;
+      });
+    } else
+      encryption = encryption
+      .then(TCG.xor(k0)) // S S
+      .then(TCG.sbox(k0))// Y U
+      .then(TCG.pbox(k0))// N G
+      .then(TCG.xor(k1)) // T A
+      .then(TCG.sbox(k1))// A R
+      .then(TCG.pbox(k1))// C
+      .then(TCG.xor(k2)) // T R
+      .then(TCG.sbox(k2))// I U
+      .then(TCG.pbox(k2))// C S
+      .then(TCG.xor(k3)) //   H
+      .then(TCG.sbox(k3));
+    encryption.then(x => toFormat(x, +cipherFormat.value, true))
+    .then(x => cipher.value = x)
+    .then(
+      () => info.innerText = 'Encryption successful. (' + (performance.now() - then) + ' ms)',
+      err => info.innerText = 'Encryption failed: ' + err // Dank error handling (should never happen (famous last words))
+    );
+  };
+  // Promise.resolve() returns a resolved promise with the initial result.
+  // When a promise is resolved, it goes to the .then() part and return another promise.
+  // then() takes a function and pass the result from the previous promise.
+  TCG.decrypt = data => {
+    const then = performance.now(), k = TCG.initKey(key.value),
+    k0 = TCG.keygen(k), k1 = TCG.keygen(k0), k2 = TCG.keygen(k1), k3 = TCG.keygen(k2);
+    let decryption;
+    try {
+      data = fromFormat(data, +cipherFormat.value, true);
+    } catch(e){
+      console.warn(e);
+      info.innerText = 'Decryption failed: Malformed ciphertext.';
+      return;
+    }
+    if(+mode.value){
+      let IV = data.subarray(0, 4);
+      decryption = Promise.resolve(data.slice(4)).then(TCG.stream(data.length - 4, k0, k1, k2, k3, IV));
+    } else {
+      decryption = Promise.resolve(data)
+      .then(TCG.sbox(k3, true))
+      .then(TCG.xor(k3))
+      .then(TCG.pbox(k2, true))
+      .then(TCG.sbox(k2, true))
+      .then(TCG.xor(k2))
+      .then(TCG.pbox(k1, true))
+      .then(TCG.sbox(k1, true))
+      .then(TCG.xor(k1))
+      .then(TCG.pbox(k0, true))
+      .then(TCG.sbox(k0, true))
+      .then(TCG.xor(k0))
+    }
+    decryption.then(A2S)
+    .then(x => plain.value = x)
+    .then(
+      () => info.innerText = 'Decryption successful. (' + (performance.now() - then) + ' ms)',
+      err => info.innerText = 'Decryption failed: ' + err
+    );
+  };
+
+  // Formatting (this part took just as long to debug as the main cipher...)
+  function fromFormat(str, type, replaceControls){
+    if(!type) {
+      if(HEXADECIMAL.test(str)) type = 2;
+      else if(BASE64.test(str)) type = 3;
+    }
+    if(type == 2) return HEX2A(str);
+    if(type == 3) return S2A(atob(str));
+    // replaceControls will replace characters that cause problems when rendered as text (DELETE, BACKSPACE, LINE FEED, etc.)
+    if(replaceControls) str = str.replace(PICTURES, x => String.fromCharCode(x.codePointAt(0) - 9216)).replace(DELETE, '\x7f');
+    return S2A(str);
+  } // WHY DID I SPEND SO MUCH TIME ON THIS
+  function toFormat(arr, type, replaceControls){
+    if(type == 2) return A2HEX(arr);
+    if(type == 3) return btoa(A2S(arr));
+    let str = A2S(arr);
+    if(replaceControls) str = str.replace(CONTROLS, x => String.fromCodePoint(Math.min(x.charCodeAt(0) + 9216, 9249)));
+    return str;
+  }
+
+  // UI functions
+  encrypt.addEventListener('click', () => TCG.encrypt(plain.value));
+  decrypt.addEventListener('click', () => TCG.decrypt(cipher.value));
+  generateKey.addEventListener('click', () => 
+    // Note: screw IE users, fetch is dank af.
+    fetch('https://www.random.org/cgi-bin/randbyte?nbytes=16&format=h', {cache: 'no-store'})
+    .then(x => x.text())
+    .then(
+      x => key.value = toFormat(fromFormat(x.replace(/ /g, ''), 2), +keyFormat.value),
+      e => key.value = toFormat(crypto.getRandomValues(new Uint32Array(4)), +keyFormat.value)
+    ).then(() => info.innerText = 'New key generated.')
+  );
+  clearPlain.addEventListener('click', () => plain.value = '');
+  clearCipher.addEventListener('click', () => cipher.value = '');
+  </script>
+</body>
+</html>
