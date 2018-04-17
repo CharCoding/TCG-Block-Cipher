@@ -37,7 +37,7 @@
     <input type="text" id="cipher" placeholder="Ciphertext" size="128" /><br />
     <input type="reset" value="Reset" />
     <p id="info">
-      Triangular Congruential Generator Block Cipher by <a href="http://github.com/CharCoding" alt="GitHub">CharCoding</a>, 2018, Some Rights Reserved.<br />
+      Triangular Congruential Generator Block Cipher by <a href="http://github.com/CharCoding/TCG-Block-Cipher/" alt="GitHub">CharCoding</a>, 2018, All Rights Reserved.<br />
       <b>DISCLAIMER: </b>I know next to nothing about cryptography and I just committed a sin by "rolling my own crypto". I am not responsible for any important data
       leaked through this cipher. Use at your own risk, and use industrial strength RSA or AES for encrypting important information instead.<br />
       That being said, you're always welcome to break this cipher and show me how you did it.
@@ -49,7 +49,7 @@
    * Block: 128 bit
    * Rounds: 4
    * Security: none
-   * Mode of operation: ECB
+   * Mode of operation: ECB, CTR
    */
   const FF = 255, FFFF = 65535, // Constants and utility functions
   utf8Encode = msg => unescape(encodeURIComponent(msg)), // Screw UTF-8 support, too much work.
@@ -128,10 +128,10 @@
       TCG.generator(k[0] & FF, G.next().value >>> 2),
       TCG.generator(k[1] >>> 8 & FF, G.next().value & FFFF),
       TCG.generator(~k[2] >>> 16 & FF, G.next().value >>> 1 & FFFF),
-      TCG.generator(~k[3] >>> 24, PRODUCT >>> 16)
+      TCG.generator(~k[3] >>> 24, PRODUCT >>> 16) // create 8 TCG generators
     ], nk = k.map(reverseBits);
     for(let i = 32; i--;)
-      nk[i & 3] ^= ROTR(G8[G.next().value & 7].next().value, i);
+      nk[i & 3] ^= ROTR(G8[G.next().value & 7].next().value, i); // assign values based on long generator G
     return nk;
   };
   TCG.xor = k => { // these functions return functions that take the Uint32Array as input
@@ -140,10 +140,10 @@
       return arr;
     };
   };
-  TCG.sbox = (k, reverse) => { // 16-bit word substitution
+  TCG.sbox = (k, reverse) => { // 16-bit word substitution (Theoretically 2^48 possible outputs)
     const gen = ROTR(k[0] << 1 ^ k[1] >>> 1, hammingWeight(k[2])) & FFFF, seed = ~k[2] ^ k[3] << 3 ^ k[3] >>> 4,
     G0 = TCG.generator(gen >>> 8, seed >>> 16), G1 = TCG.generator(gen & FF, seed & FFFF),
-    SBOX = new Uint16Array(65536); // rip memory (32KB)
+    SBOX = new Uint16Array(65536); // rip memory (32KB dictionary)
     if(reverse)
       for(let i = 65536; i--;) SBOX[G1.next().value] = G0.next().value;
     else
@@ -153,11 +153,11 @@
       return arr;
     };
   };
-  TCG.pbox = (k, reverse) => { // 128-bit block permutation
+  TCG.pbox = (k, reverse) => { // 128-bit block permutation (Theoretically 2^24 possible outputs)
     const gen = ROTR(k[3] << 2 ^ k[2] >>> 1, hammingWeight(k[1])) & FF, seed = reverseBits(k[1]) ^ k[0] << 4 ^ k[0] >>> 3,
     G = TCG.generator(gen, seed & FFFF);
     let order = [];
-    for(let i = 0; i < 128; i++) order[G.next().value] = i;
+    for(let i = 0; i < 128; i++) order[G.next().value] = i; // bucket sort 128 indices based on generator output
     order = Uint8Array.from(order.filter(n => true));
     return reverse ? arr => { // NOTE: This is a ternary operator just to confuse everyone
       for(let i = 0, l = arr.length; i < l; i += 4){
@@ -175,14 +175,12 @@
       return arr;
     };
   };
-  // Using promises to reset call stack, hopefully no crashes.
-  // It's really easy to see the order of execution like this.
-  // Also the syntax is dank af
+  // Stream generator for CTR Mode
   TCG.stream = (length, k0, k1, k2, k3, IV) => {
     const stream = new Uint32Array(length), G = TCG.longGenerator((IV[0] ^ IV[3] & 3, (IV[1] ^ IV[2]) & 262143));
     for(let i = length; i--;){
       stream[i] = IV[i & 3];
-      if((i & 3) == 3) stream[i] = (stream[i] & -262144) | G.next().value;
+      if((i & 3) == 3) stream[i] = (stream[i] & -262144) | G.next().value; // maximum length is 2^20 characters in CTR mode
     }
     TCG.xor(k0)(stream);
     TCG.sbox(k0)(stream);
@@ -201,12 +199,15 @@
       return arr;
     }
   }
+  // Using promises to reset call stack, hopefully no crashes.
+  // It's really easy to see the order of execution like this.
+  // Also the syntax is dank af
   TCG.encrypt = data => {
     const then = performance.now(), k = TCG.initKey(key.value), // Let's measure the time cuz why not
     k0 = TCG.keygen(k), k1 = TCG.keygen(k0), k2 = TCG.keygen(k1), k3 = TCG.keygen(k2);
     data = S2A(TCG.padMessage(data));
     let encryption = Promise.resolve(data);
-    if(+mode.value) {
+    if(+mode.value) { // CTR mode
       const IV = crypto.getRandomValues(new Uint32Array(4));
       encryption = encryption
       .then(TCG.stream(data.length, k0, k1, k2, k3, IV))
@@ -216,7 +217,7 @@
         result.set(x, 4);
         return result;
       });
-    } else
+    } else // ECB mode
       encryption = encryption
       .then(TCG.xor(k0)) // S S
       .then(TCG.sbox(k0))// Y U
@@ -250,10 +251,10 @@
       info.innerText = 'Decryption failed: Malformed ciphertext.';
       return;
     }
-    if(+mode.value){
+    if(+mode.value){ // CTR mode
       let IV = data.subarray(0, 4);
       decryption = Promise.resolve(data.slice(4)).then(TCG.stream(data.length - 4, k0, k1, k2, k3, IV));
-    } else {
+    } else // ECB mode
       decryption = Promise.resolve(data)
       .then(TCG.sbox(k3, true))
       .then(TCG.xor(k3))
@@ -266,7 +267,6 @@
       .then(TCG.pbox(k0, true))
       .then(TCG.sbox(k0, true))
       .then(TCG.xor(k0))
-    }
     decryption.then(A2S)
     .then(x => plain.value = x)
     .then(
@@ -275,7 +275,7 @@
     );
   };
 
-  // Formatting (this part took just as long to debug as the main cipher...)
+  // Formatting
   function fromFormat(str, type, replaceControls){
     if(!type) {
       if(HEXADECIMAL.test(str)) type = 2;
@@ -304,6 +304,7 @@
     .then(x => x.text())
     .then(
       x => key.value = toFormat(fromFormat(x.replace(/ /g, ''), 2), +keyFormat.value),
+      // offline fallback
       e => key.value = toFormat(crypto.getRandomValues(new Uint32Array(4)), +keyFormat.value)
     ).then(() => info.innerText = 'New key generated.')
   );
