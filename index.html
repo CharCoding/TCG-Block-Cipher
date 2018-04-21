@@ -5,7 +5,7 @@
   <meta charset="utf-8" />
   <style type="text/css">
   * { font-size: 20px; }
-  body { margin: 20px 80px; }
+  body { margin: 16px 64px; }
   </style>
 </head>
 <body>
@@ -24,6 +24,9 @@
       <option value="0">ECB</option>
       <option value="1" selected="selected">CTR</option>
     </select>
+    Rounds: <input type="number" id="rounds" min="4" max="16" step="1" style="width:50px;" placeholder="5" />
+    <input type="checkbox" id="logData" checked="checked" />
+    <label for="logData">Log data</label>
     <br />
     <input type="text" id="plain" placeholder="Plaintext" size="128" /><br />
     <input type="button" id="decrypt" value="Decrypt" />
@@ -36,23 +39,29 @@
     </select><br />
     <input type="text" id="cipher" placeholder="Ciphertext" size="128" /><br />
     <input type="reset" value="Reset" />
-    <p id="info">
-      Triangular Congruential Generator Block Cipher by <a href="http://github.com/CharCoding/TCG-Block-Cipher/" alt="GitHub">CharCoding</a>, 2018, All Rights Reserved.<br />
-      <b>DISCLAIMER: </b>I know next to nothing about cryptography and I just committed a sin by "rolling my own crypto". I am not responsible for any important data
-      leaked through this cipher. Use at your own risk, and use industrial strength RSA or AES for encrypting important information instead.<br />
-      That being said, you're always welcome to break this cipher and show me how you did it.
-    </p>
   </form>
+  <p id="info"></p>
+  <p id="description">
+    Triangular Congruential Generator Block Cipher v1.1 by <a href="http://github.com/CharCoding/TCG-Block-Cipher/" title="GitHub">CharCoding</a>, 2018, All Rights Reserved.<br />
+    <b>DISCLAIMER: </b>I know next to nothing about cryptography and I just committed a sin by "rolling my own crypto". I am not responsible for any important data
+    leaked through this cipher. Use at your own risk, and use industrial strength RSA or AES for encrypting important information instead.<br />
+    That being said, you're always welcome to break this cipher and show me how you did it.<br />I tried to comment <a href="https://github.com/CharCoding/TCG-Block-Cipher/blob/master/index.html" title="View Source">my code</a> and write it in a somewhat clear structure, hopefully it helps.<br /><br />
+    <b>Challenge: </b>Find the key from the following information:<br />
+    Mode of operation: ECB. Rounds: 5<br />
+    Plaintext:<br /><br />Triangular congruential generators differ from LCGs by having an intermediate step that finds the triangular number of the previous output first and using it to calculate the next output. This simple change avoids many of the weaknesses of LCG, such as the n-th least significant bit has a period of 2^n. This is not the case in TCG, as all bits have an equal, maximal period. For a visualization of the said improvement, visit https://jsfiddle.net/CharCoding/f90q2wo0/1/ .<br /><br />Ciphertext:<br /><br /><span style="overflow-wrap:break-word;word-break:break-all;">k2QgzGDaAQxJzV49gkccoG5zI4WeXWltEJRgBUeDI9VQCzy1nlYax2xyG588nbsEj2j/7Cfdowbi/Qe3AyS5HGpWNneEg+P+qhA+hE68oleihJmDuexeHLqIsad46ImXiL0abBC80WKIsZ56SxMYAFYxw5cMTHh+AJg/t16py3jv2BPqyMD7XuU6atIcnrGnzXwqhfgYpOLFq28Bbu2+CRpRrEf22zmOoCuqENf8SO/aZqufbcgaFsYv/Ks1DPOp0Ov/yYTnyjMsBhKxzUY67aP4YTMKwP6FoMKSDauA5addEFju9nQx0hnX1WmlhWGUYU8MeollnqghPjh9qUyB6DLtzLp0dVvFVqpnlki6fqidWLORRlwzxkXlCGxceAKSaRBJgLamL4pPNt9THk0Z+ZJUMEeJAU9cPpcgRuZF8xmCNdhhuKWP3KzU393TNU2qOBoqwgz/75H7pcOFU5p31B23PbWvfYKHC2Ck1x0g3TcSuVG59iqU/lm9veriA6aZHAnldKcqdzL7ceFaX6wakNKEXbOR1cnKR9Ilig21T+6tG85KKnxxsWxEciSnD8Kryn6CZfO3k6stEFuXvMSjhNPNDLcBFsc4OqkEUXPywQE+N/Tehwjp+UB9LCXt2lJS</span>
+  </p>
   <script type="text/javascript">'use strict';
   /* Triangular Congruential Generator Block Cipher
    * Key: 128 bit
    * Block: 128 bit
-   * Rounds: 4
+   * Structure: SP-network
+   * Rounds: 4 ~ 16
    * Security: none
    * Mode of operation: ECB, CTR
+   * Disclaimer: I am not responsible for any mental or physical damage caused by reading the following code.
    */
   const FF = 255, FFFF = 65535, // Constants and utility functions
-  utf8Encode = msg => unescape(encodeURIComponent(msg)), // Screw UTF-8 support, too much work.
+  utf8Encode = msg => unescape(encodeURIComponent(msg)), // UTF-8 support
   utf8Decode = msg => {
     try {
       return decodeURIComponent(escape(msg));
@@ -60,10 +69,10 @@
       return msg;
     }
   },
-  A2S = a => String.fromCharCode.apply(null, new Uint8Array(a.buffer)).replace(/\0+$/, ''), // Magic
-  S2A = s => new Uint32Array(Uint8Array.from(s, e => e.charCodeAt(0)).buffer), // More magic
-  A2HEX = a => a.reduce((str, e) => str += (4294967296 + e).toString(16).slice(1), ''), // Whaaaaat
-  HEX2A = s => Uint32Array.from(s.replace(/.{1,8}/g, ' 0x$&').split(' ').slice(1)), // It works and I have no idea why
+  A2S = a => String.fromCharCode.apply(null, new Uint8Array(a.buffer)).replace(/\0+$/, ''), // Magic (array to string)
+  S2A = s => new Uint32Array(Uint8Array.from(s, e => e.charCodeAt(0)).buffer), // More magic (string to array)
+  A2HEX = a => a.reduce((str, e) => str += (4294967296 + e).toString(16).slice(1), ''), // Whaaaaat (array to hex)
+  HEX2A = s => Uint32Array.from(s.replace(/.{1,8}/g, ' 0x$&').split(' ').slice(1)), // It works and I have no idea why (hex to array)
   hammingWeight = word => { // count bits set in 32 bit ints
     word = word - ((word >> 1) & 1431655765);
     word = (word & 858993459) + ((word >> 2) & 858993459);
@@ -75,47 +84,51 @@
     word = (word >> 4 & 252645135)  | (word & 252645135)  << 4;
     word = (word >> 8 & 16711935)   | (word & 16711935)   << 8;
     return word >>> 16 | word << 16;
-  }, analyze = (a, b) => { // this was for checking how many bits changed between input and output
-    if(typeof a == 'string') {
-      a = S2A(a);
-      b = S2A(b);
-    }
-    for(let i = a.length; i--;) console.log(hammingWeight(a[i] ^ b[i]));
-  },
-  // Regular expressions for detecting format and replacing control characters
+  }, // Regular expressions for detecting format and replacing control characters
   HEXADECIMAL = /^(?:[\da-f]{2})*$/i,
   BASE64 = /^(?:[A-Z0-9+\/]{4})*(?:[A-Z0-9+\/]{2}==|[A-Z0-9+\/]{3}=)?$/i,
   CONTROLS = /[\0- \x7f]/g,
   PICTURES = /[\u2400-\u2420]/g,
   DELETE = /\u2421/g;
 
-  // Main TCG Cipher object
-  function* TCG(a, b, m, x){ // Literally the entire cipher relies on the "assumed" lack of correlation between consecutive numbers in a sequence...
-    const i = x; // So, if this happens to be not as good as I thought (which probably is the case)
-    do yield x = a * (x * x + x >>> 1) + b & m; // the cipher is 100% insecure.
-    while(x != i); // Otherwise the cipher is 99% insecure.
-  } // In other words, never use this cipher for anything at all.
+  /* Main TCG Cipher namespace
+   * This generator produces 2^16 16-bit uniformly distributed integers when initialized with the correct parameters.
+   * Literally the entire cipher relies on the "assumed" lack of correlation between consecutive numbers in a sequence...
+   * So, if this happens to be not as good as I thought (which probably is the case), the cipher is 100% insecure.
+   * Otherwise the cipher is 99% insecure. In other words, never use this cipher for anything at all.
+  */
+  function* TCG(a, b, m, x){
+    const i = x;
+    do yield x = a * (x * x + x >>> 1) + b & m;
+    while(x != i);
+  }
 
-  // Generator constants for multiplier and adder
-  TCG.A16 = Int16Array.of(19,21,25,29,31,31,39,41,43,47,49,53,55,63,67,75,77,83,83,89,91,93,99,107,113,115,117,123,125,127,131,135,141,149,151,157,159,171,173,175,181,193,195,199,209,211,213,219,223,225,227,235,237,239,249,251,259,261,263,267,269,271,279,289,291,299,303,305,311,315,321,331,343,347,351,355,357,359,377,381,383,385,387,389,395,399,403,407,409,413,433,437,441,451,453,459,461,469,471,473,475,477,491,493,503,505,507,509,517,519,521,531,533,535,551,555,557,559,563,571,575,579,581,587,591,595,599,601);
-  TCG.B16 = Uint16Array.of(7027,48722,29554,25898,42907,48703,21679,22404,48667,27421,50846,57678,54379,58499,26801,12849,37470,33019,45563,23642,32973,39758,60063,56613,44510,26783,43934,57369,9214,31739,16427,53951,43566,25122,56247,46232,53147,47357,52188,55259,45866,26558,57649,17231,20062,21897,56702,64117,5269,35366,58599,38833,61604,61409,34594,54241,6641,35436,33811,28759,57962,43583,30493,64588,48941,3871,13457,44596,13573,62497,33676,24865,43943,11953,54443,39025,38414,23359,42764,4564,62827,58522,21765,56806,61667,37519,27881,16021,55870,25436,55052,30894,34226,22893,27772,27569,46106,502,24277,32614,54185,24914,15991,21578,16179,13026,38607,52388,31222,39559,61526,349,46702,49011,45121,64679,14830,21013,3781,9355,41015,33467,19298,52901,28295,47273,37667,22978);
-  TCG.A18 = Int8Array.of(7, 23, 29, 31);
+  // Generator constants for multiplier and adder (128 values * 2 configurations * 65536 starting points = 2^24 sequences)
+  TCG.A16 = Int16Array.of(19,21,25,29,31,39,41,43,47,49,53,55,63,67,75,77,83,83,89,91,93,99,107,113,115,117,123,125,127,131,135,141,149,151,157,159,171,173,175,181,193,195,199,209,211,213,219,223,225,227,235,237,239,249,251,259,261,263,267,269,271,279,289,291,299,303,305,311,315,321,331,343,347,351,355,357,359,377,381,383,385,387,389,395,399,403,407,409,413,433,437,441,451,453,459,461,469,471,473,475,477,491,493,503,505,507,509,517,519,521,531,533,535,551,555,557,559,563,571,575,579,581,587,591,595,599,601,603);
+  TCG.B16 = Uint16Array.of(7027,48722,29554,25898,48703,21679,22404,48667,27421,50846,57678,54379,58499,26801,12849,37470,33019,45563,23642,32973,39758,60063,56613,44510,26783,43934,57369,9214,31739,16427,53951,43566,25122,56247,46232,53147,47357,52188,55259,45866,26558,57649,17231,20062,21897,56702,64117,5269,35366,58599,38833,61604,61409,34594,54241,6641,35436,33811,28759,57962,43583,30493,64588,48941,3871,13457,44596,13573,62497,33676,24865,43943,11953,54443,39025,38414,23359,42764,4564,62827,58522,21765,56806,61667,37519,27881,16021,55870,25436,55052,30894,34226,22893,27772,27569,46106,502,24277,32614,54185,24914,15991,21578,16179,13026,38607,52388,31222,39559,61526,349,46702,49011,45121,64679,14830,21013,3781,9355,41015,33467,19298,52901,28295,47273,37667,22978,43109);
+  TCG.A18 = Int8Array.of(7, 23, 29, 31); // long generators have period 2^18
   TCG.B18 = Int32Array.of(231859, 42211, 200860, 52257);
+  let debug = +logData.checked; // print each step of calculation to console
 
-  // Important crypto functions
+  // Cryptographic functions
   TCG.padMessage = (str, chunk = 16) => str + new Array(chunk - (str.length - 1 & chunk - 1)).join('\0');
+
   TCG.generator = (gen, seed) => { // return a generator from given parameter and seed
     if(gen & 128)
       return TCG(65536 - TCG.A16[gen & 127], 32767 ^ TCG.B16[gen & 127], FFFF, seed);
     else
       return TCG(TCG.A16[gen], TCG.B16[gen], FFFF, seed);
   };
+
   TCG.longGenerator = (gen, seed) => TCG(TCG.A18[gen], TCG.B18[gen], 262143, seed);
+
   TCG.initKey = str => { // If key is too short it is repeated, if key is too long it is added on top
     const k = new Uint32Array(4), input = S2A(TCG.padMessage(str, 4));
     for(let i = Math.max(input.length, 4); i--;) k[i & 3] += input[i % input.length];
+    if(debug) TCG.logData(k, 'initKey');
     return k;
   };
+
   TCG.keygen = k => { // SECURITY THROUGH OBSCURITY REeeEEeEeeEeeEEeEEeeEeEEeEeeEEeE
     const HW = hammingWeight(k[0]) + hammingWeight(k[1]) + hammingWeight(k[2]) + hammingWeight(k[3]),
     SUM = k[0] + k[1] + k[2] + k[3],
@@ -132,148 +145,165 @@
     ], nk = k.map(reverseBits);
     for(let i = 32; i--;)
       nk[i & 3] ^= ROTR(G8[G.next().value & 7].next().value, i); // assign values based on long generator G
+    if(debug) TCG.logData(k, nk, 'keygen');
     return nk;
   };
-  TCG.xor = k => { // these functions return functions that take the Uint32Array as input
-    return arr => { // P.S. xor is the same as it's reverse, unlike sbox and pbox.
-      for(let i = arr.length; i--;) arr[i] ^= k[i & 3];
-      return arr;
-    };
+
+  TCG.xor = (k, arr) => { // key whitening
+    for(let i = arr.length; i--;) arr[i] ^= k[i & 3];
+    if(debug) TCG.logData(arr, 'xor');
   };
-  TCG.sbox = (k, reverse) => { // 16-bit word substitution (Theoretically 2^48 possible outputs)
+
+  TCG.sbox = (k, arr, reverse) => { // 16-bit word substitution (Theoretically 2^48 possible outputs)
     const gen = ROTR(k[0] << 1 ^ k[1] >>> 1, hammingWeight(k[2])) & FFFF, seed = ~k[2] ^ k[3] << 3 ^ k[3] >>> 4,
     G0 = TCG.generator(gen >>> 8, seed >>> 16), G1 = TCG.generator(gen & FF, seed & FFFF),
-    SBOX = new Uint16Array(65536); // rip memory (32KB dictionary)
+    SBOX = new Uint16Array(65536), before = arr.slice(); // rip memory (32KB dictionary)
     if(reverse)
       for(let i = 65536; i--;) SBOX[G1.next().value] = G0.next().value;
     else
       for(let i = 65536; i--;) SBOX[G0.next().value] = G1.next().value;
-    return arr => {
-      for(let i = arr.length; i--;) arr[i] = SBOX[arr[i] >>> 16] << 16 | SBOX[arr[i] & FFFF];
-      return arr;
-    };
+    for(let i = arr.length; i--;) arr[i] = SBOX[arr[i] >>> 16] << 16 | SBOX[arr[i] & FFFF];
+    if(debug) TCG.logData(before, arr.slice(), 'sbox');
   };
-  TCG.pbox = (k, reverse) => { // 128-bit block permutation (Theoretically 2^24 possible outputs)
+
+  TCG.pbox = (k, arr, reverse) => { // 128-bit block permutation (Theoretically 2^24 possible outputs)
     const gen = ROTR(k[3] << 2 ^ k[2] >>> 1, hammingWeight(k[1])) & FF, seed = reverseBits(k[1]) ^ k[0] << 4 ^ k[0] >>> 3,
-    G = TCG.generator(gen, seed & FFFF);
+    G = TCG.generator(gen, seed & FFFF), before = arr.slice();
     let order = [];
     for(let i = 0; i < 128; i++) order[G.next().value] = i; // bucket sort 128 indices based on generator output
     order = Uint8Array.from(order.filter(n => true));
-    return reverse ? arr => { // NOTE: This is a ternary operator just to confuse everyone
+    if(reverse)
       for(let i = 0, l = arr.length; i < l; i += 4){
         const tempArr = arr.slice(i, i + 4);
         for(let j = i; j < i + 4; j++) arr[j] = 0;
         for(let j = 128; j--;) arr[i + (order[j] >>> 5)] |= ((tempArr[j >>> 5] >>> (j & 31)) & 1) << (order[j] & 31);
       }
-      return arr;
-    } : arr => {
+    else 
       for(let i = 0, l = arr.length; i < l; i += 4){
         const tempArr = arr.slice(i, i + 4);
         for(let j = i; j < i + 4; j++) arr[j] = 0;
         for(let j = 128; j--;) arr[i + (j >>> 5)] |= ((tempArr[order[j] >>> 5] >>> (order[j] & 31)) & 1) << (j & 31);
       }
-      return arr;
-    };
+    if(debug) TCG.logData(before, arr.slice(), 'pbox');
   };
-  // Stream generator for CTR Mode
-  TCG.stream = (length, k0, k1, k2, k3, IV) => {
-    const stream = new Uint32Array(length), G = TCG.longGenerator((IV[0] ^ IV[3] & 3, (IV[1] ^ IV[2]) & 262143));
-    for(let i = length; i--;){
+
+  TCG.round = (k, arr, reverse) => { // round function
+    if(reverse) {
+      TCG.pbox(k, arr, reverse);
+      TCG.sbox(k, arr, reverse);
+    }
+    TCG.xor(k, arr);
+    if(!reverse) {
+      TCG.sbox(k, arr);
+      TCG.pbox(k, arr);
+    }
+  };
+
+  TCG.stream = (ks, arr, IV) => { // Stream generator for CTR Mode
+    const stream = new Uint32Array(arr.length), G = TCG.longGenerator((IV[0] ^ IV[3]) & 3, (IV[1] ^ IV[2]) & 262143), before = arr.slice();
+    for(let i = arr.length; i--;){
       stream[i] = IV[i & 3];
       if((i & 3) == 3) stream[i] = (stream[i] & -262144) | G.next().value; // maximum length is 2^20 characters in CTR mode
     }
-    TCG.xor(k0)(stream);
-    TCG.sbox(k0)(stream);
-    TCG.pbox(k0)(stream);
-    TCG.xor(k1)(stream);
-    TCG.sbox(k1)(stream);
-    TCG.pbox(k1)(stream);
-    TCG.xor(k2)(stream);
-    TCG.sbox(k2)(stream);
-    TCG.pbox(k2)(stream);
-    TCG.xor(k3)(stream);
-    TCG.sbox(k3)(stream);
-    return arr => {
-      for(let i = length; i--;)
-        arr[i] ^= stream[i];
-      return arr;
-    }
-  }
-  // Using promises to reset call stack, hopefully no crashes.
-  // It's really easy to see the order of execution like this.
-  // Also the syntax is dank af
+    if(debug) TCG.logData(IV, 'IV');
+    for(let i = 0; i < ks.length - 1; i++)
+      TCG.round(ks[i], stream);
+    TCG.xor(ks[ks.length - 1], stream);
+    TCG.sbox(ks[ks.length - 1], stream);
+    for(let i = arr.length; i--;)
+      arr[i] ^= stream[i];
+    if(debug) TCG.logData(before, arr.slice(), 'stream');
+  };
+
   TCG.encrypt = data => {
-    const then = performance.now(), k = TCG.initKey(key.value), // Let's measure the time cuz why not
-    k0 = TCG.keygen(k), k1 = TCG.keygen(k0), k2 = TCG.keygen(k1), k3 = TCG.keygen(k2);
-    data = S2A(TCG.padMessage(data));
-    let encryption = Promise.resolve(data);
-    if(+mode.value) { // CTR mode
-      const IV = crypto.getRandomValues(new Uint32Array(4));
-      encryption = encryption
-      .then(TCG.stream(data.length, k0, k1, k2, k3, IV))
-      .then(x => {
-        const result = new Uint32Array(x.length + 4);
-        result.set(IV);
-        result.set(x, 4);
-        return result;
-      });
-    } else // ECB mode
-      encryption = encryption
-      .then(TCG.xor(k0)) // S S
-      .then(TCG.sbox(k0))// Y U
-      .then(TCG.pbox(k0))// N G
-      .then(TCG.xor(k1)) // T A
-      .then(TCG.sbox(k1))// A R
-      .then(TCG.pbox(k1))// C
-      .then(TCG.xor(k2)) // T R
-      .then(TCG.sbox(k2))// I U
-      .then(TCG.pbox(k2))// C S
-      .then(TCG.xor(k3)) //   H
-      .then(TCG.sbox(k3));
-    encryption.then(x => toFormat(x, +cipherFormat.value, true))
-    .then(x => cipher.value = x)
-    .then(
-      () => info.innerText = 'Encryption successful. (' + (performance.now() - then) + ' ms)',
-      err => info.innerText = 'Encryption failed: ' + err // Dank error handling (should never happen (famous last words))
-    );
-  };
-  // Promise.resolve() returns a resolved promise with the initial result.
-  // When a promise is resolved, it goes to the .then() part and return another promise.
-  // then() takes a function and pass the result from the previous promise.
-  TCG.decrypt = data => {
-    const then = performance.now(), k = TCG.initKey(key.value),
-    k0 = TCG.keygen(k), k1 = TCG.keygen(k0), k2 = TCG.keygen(k1), k3 = TCG.keygen(k2);
-    let decryption;
     try {
-      data = fromFormat(data, +cipherFormat.value, true);
-    } catch(e){
-      console.warn(e);
-      info.innerText = 'Decryption failed: Malformed ciphertext.';
-      return;
+      const then = performance.now(), k = TCG.initKey(key.value), // Let's measure the time cuz why not
+      //k0 = TCG.keygen(k), k1 = TCG.keygen(k0), k2 = TCG.keygen(k1), k3 = TCG.keygen(k2),
+      ks = new Array(+rounds.value || 5);
+      ks[0] = TCG.keygen(k);
+      for(let i = 1; i < ks.length; i++)
+        ks[i] = TCG.keygen(ks[i - 1]);
+      data = S2A(TCG.padMessage(utf8Encode(data)));
+      let before = data.slice();
+      if(+mode.value) { // CTR mode
+        const IV = crypto.getRandomValues(new Uint32Array(4)),
+        tempArr = new Uint32Array(data.length + 4);
+        TCG.stream(ks, data, IV);
+        tempArr.set(IV);
+        tempArr.set(data, 4);
+        data = tempArr;
+      } else {// ECB mode
+        for(let i = 0; i < ks.length - 1; i++) {
+          TCG.round(ks[i], data);
+          if(debug) {
+            TCG.logData(before, data, 'encrypt-' + i);
+            before = data.slice();
+          }
+        }
+        TCG.xor(ks[ks.length - 1], data);
+        TCG.sbox(ks[ks.length - 1], data);
+        if(debug) TCG.logData(before, data, 'encrypt-' + (ks.length - 1));
+      }
+      cipher.value = toFormat(data, +cipherFormat.value, true);
+      info.innerText = 'Encryption successful. (' + (performance.now() - then) + ' ms)';
+    } catch(err) {
+      info.innerText = 'Encryption failed: ' + err; // should never happen (famous last words)
     }
-    if(+mode.value){ // CTR mode
-      let IV = data.subarray(0, 4);
-      decryption = Promise.resolve(data.slice(4)).then(TCG.stream(data.length - 4, k0, k1, k2, k3, IV));
-    } else // ECB mode
-      decryption = Promise.resolve(data)
-      .then(TCG.sbox(k3, true))
-      .then(TCG.xor(k3))
-      .then(TCG.pbox(k2, true))
-      .then(TCG.sbox(k2, true))
-      .then(TCG.xor(k2))
-      .then(TCG.pbox(k1, true))
-      .then(TCG.sbox(k1, true))
-      .then(TCG.xor(k1))
-      .then(TCG.pbox(k0, true))
-      .then(TCG.sbox(k0, true))
-      .then(TCG.xor(k0))
-    decryption.then(A2S)
-    .then(x => plain.value = x)
-    .then(
-      () => info.innerText = 'Decryption successful. (' + (performance.now() - then) + ' ms)',
-      err => info.innerText = 'Decryption failed: ' + err
-    );
   };
+
+  TCG.decrypt = data => {
+    try {
+      const then = performance.now(), k = TCG.initKey(key.value),
+      ks = new Array(+rounds.value || 5);
+      ks[0] = TCG.keygen(k);
+      for(let i = 1; i < ks.length; i++)
+        ks[i] = TCG.keygen(ks[i - 1]);
+      data = fromFormat(data, +cipherFormat.value, true);
+      let before = data.slice();
+      if(+mode.value){ // CTR mode
+        let IV = data.subarray(0, 4);
+        data = data.slice(4);
+        TCG.stream(ks, data, IV);
+      } else {// ECB mode
+        TCG.sbox(ks[ks.length - 1], data, true);
+        TCG.xor(ks[ks.length - 1], data);
+        for(let i = ks.length - 1; i--;) {
+          if(debug) {
+            TCG.logData(before, data, 'decrypt-' + (i + 1));
+            before = data.slice();
+          }
+          TCG.round(ks[i], data, true);
+        }
+        if(debug) TCG.logData(before, data, 'decrypt-0');
+      }
+      plain.value = utf8Decode(A2S(data));
+      info.innerText = 'Decryption successful. (' + (performance.now() - then) + ' ms)';
+    } catch(err) {
+      info.innerText = 'Decryption failed: ' + err;
+    }
+  };
+
+  TCG.logData = (before, after, method) => { // for cryptanalysis
+    console.log(+mode.value ? 'CTR' : 'ECB', method || after, 'length: ' + before.length);
+    console.log(A2HEX(before));
+    if(method) console.log(A2HEX(after));
+    console.log(A2S(before));
+    if(method) console.log(A2S(after));
+    const total = before.length << 5;
+    let sumBefore = 0, sumAfter = 0, sumXor = 0;
+    for(let i = before.length; i--;) {
+      sumBefore += hammingWeight(before[i]);
+      if(method) {
+        sumAfter += hammingWeight(after[i]);
+        sumXor += hammingWeight(before[i] ^ after[i]);
+      }
+    }
+    console.log(`0:1 = ${total - sumBefore}:${sumBefore}, ${(sumBefore / total * 100).toFixed(1)}%`);
+    if(method) {
+      console.log(`0:1 = ${total - sumAfter}:${sumAfter}, ${(sumAfter / total * 100).toFixed(1)}%`);
+      console.log(`0:1 = ${total - sumXor}:${sumXor}, ${(sumXor / total * 100).toFixed(1)}%`);
+    }
+  } // I don't actually know how to do cryptanalysis, does this even help?
 
   // Formatting
   function fromFormat(str, type, replaceControls){
@@ -303,11 +333,12 @@
     fetch('https://www.random.org/cgi-bin/randbyte?nbytes=16&format=h', {cache: 'no-store'})
     .then(x => x.text())
     .then(
-      x => key.value = toFormat(fromFormat(x.replace(/ /g, ''), 2), +keyFormat.value),
+      x => key.value = toFormat(HEX2A(x.replace(/ /g, '')), +keyFormat.value),
       // offline fallback
       e => key.value = toFormat(crypto.getRandomValues(new Uint32Array(4)), +keyFormat.value)
     ).then(() => info.innerText = 'New key generated.')
   );
+  logData.addEventListener('click', e => debug = e.target.checked);
   clearPlain.addEventListener('click', () => plain.value = '');
   clearCipher.addEventListener('click', () => cipher.value = '');
   </script>
