@@ -5,7 +5,8 @@
   <meta charset="utf-8" />
   <style type="text/css">
   * { font-size: 20px; }
-  body { margin: 16px 64px; }
+  body { margin: 16px 48px; }
+  #plain, #cipher { width: 100%; box-sizing: border-box; }
   </style>
 </head>
 <body>
@@ -28,7 +29,7 @@
     <input type="checkbox" id="logData" checked="checked" />
     <label for="logData">Log data</label>
     <br />
-    <input type="text" id="plain" placeholder="Plaintext" size="128" /><br />
+    <input type="text" id="plain" placeholder="Plaintext" /><br />
     <input type="button" id="decrypt" value="Decrypt" />
     <input type="button" id="clearCipher" value="Clear" />
     <select id="cipherFormat">
@@ -37,7 +38,7 @@
       <option value="2">Hexadecimal</option>
       <option value="3">Base64</option>
     </select><br />
-    <input type="text" id="cipher" placeholder="Ciphertext" size="128" /><br />
+    <input type="text" id="cipher" placeholder="Ciphertext" /><br />
     <input type="reset" value="Reset" />
   </form>
   <p id="info"></p>
@@ -48,7 +49,7 @@
     That being said, you're always welcome to break this cipher and show me how you did it.<br />I tried to comment <a href="https://github.com/CharCoding/TCG-Block-Cipher/blob/master/index.html" title="View Source">my code</a> and write it in a somewhat clear structure, hopefully it helps.<br /><br />
     <b>Challenge: </b>Find the key from the following information:<br />
     Mode of operation: ECB. Rounds: 5<br />
-    Plaintext:<br /><br />Triangular congruential generators differ from LCGs by having an intermediate step that finds the triangular number of the previous output first and using it to calculate the next output. This simple change avoids many of the weaknesses of LCG, such as the n-th least significant bit has a period of 2^n. This is not the case in TCG, as all bits have an equal, maximal period. For a visualization of the said improvement, visit https://jsfiddle.net/CharCoding/f90q2wo0/1/ .<br /><br />Ciphertext:<br /><br /><span style="overflow-wrap:break-word;word-break:break-all;">k2QgzGDaAQxJzV49gkccoG5zI4WeXWltEJRgBUeDI9VQCzy1nlYax2xyG588nbsEj2j/7Cfdowbi/Qe3AyS5HGpWNneEg+P+qhA+hE68oleihJmDuexeHLqIsad46ImXiL0abBC80WKIsZ56SxMYAFYxw5cMTHh+AJg/t16py3jv2BPqyMD7XuU6atIcnrGnzXwqhfgYpOLFq28Bbu2+CRpRrEf22zmOoCuqENf8SO/aZqufbcgaFsYv/Ks1DPOp0Ov/yYTnyjMsBhKxzUY67aP4YTMKwP6FoMKSDauA5addEFju9nQx0hnX1WmlhWGUYU8MeollnqghPjh9qUyB6DLtzLp0dVvFVqpnlki6fqidWLORRlwzxkXlCGxceAKSaRBJgLamL4pPNt9THk0Z+ZJUMEeJAU9cPpcgRuZF8xmCNdhhuKWP3KzU393TNU2qOBoqwgz/75H7pcOFU5p31B23PbWvfYKHC2Ck1x0g3TcSuVG59iqU/lm9veriA6aZHAnldKcqdzL7ceFaX6wakNKEXbOR1cnKR9Ilig21T+6tG85KKnxxsWxEciSnD8Kryn6CZfO3k6stEFuXvMSjhNPNDLcBFsc4OqkEUXPywQE+N/Tehwjp+UB9LCXt2lJS</span>
+    Plaintext:<br /><br />Triangular congruential generators differ from LCGs by having an intermediate step that finds the triangular number of the previous output first and using it to calculate the next output. This simple change avoids many of the weaknesses of LCG, such as the n-th least significant bit has a period of 2^n. This is not the case in TCG, as all bits have an equal, maximal period. For a visualization of the said improvement, visit https://jsfiddle.net/CharCoding/f90q2wo0/1/ .<br /><br />Ciphertext:<br /><br /><span style="overflow-wrap:break-word;word-break:break-all;">6Jpvf830joEtjhGMrx9tiJHDmOA549Os9zSIEJQmkbZ3/v8Fp/eWO514SfVPpJ/UHtdeS9M6rcCK8EyCXMtCV3pNtJmi+EVQsWAt7l80ATvRXOHvukYYyPMa76IkE02vZXEEmeNjJZteE7VSvRo95pKjy6L51Vm3usdyU7/5vtWDgEfC8kd0ryFTymSfXxY7uCdBCbdW/cB71/sOWALRoYywjOOQeTpCf/+6dgQbqJqiFtzAbDxSLiAgXCBNxt25cSNwlDKVEADklGWZUydgBQ8wbmfy/NMIgokJAVw5G70jn+SXqO737wiojec4D7Y/qUYBDSvfzeGCMRQ/L+wC3Cq5MTjJ2tu5oSwOBV1qAxvY/0fN9n6mVg85Fq29gCFVwmqxYn0gayP1Wraau9kMUeQsBa6+B7LyDoZ8ZNzs6YC0X/1mcX4XDxcL8MeZMQvlg40NS4pZ/2vp6asR4o6TM9I2pVqgFjjigw4Yut1klxMEF/HJOVrj7dUrnBWz1ocJHW1drpkyOPjitvsrKjodcGgeQz5K4GJhq7qKJOfjmpSmDTsUXi/I4JEWhgSKL4vOvROn0RzYDBE82EzgI0Ye5ZxT1nzkrHskfDZcLZ7BPGTXhN18EVtrS7Vrat6wLBmo</span>
   </p>
   <script type="text/javascript">'use strict';
   /* Triangular Congruential Generator Block Cipher
@@ -134,17 +135,19 @@
     SUM = k[0] + k[1] + k[2] + k[3],
     PRODUCT = Math.imul(Math.imul(k[0],k[1]),Math.imul(k[2],k[3])),
     G = TCG.longGenerator(HW & 3, SUM & 262143), G8 = [
-      TCG.generator(G.next().value & FF, G.next().value >>> 2),
-      TCG.generator(G.next().value >>> 10, G.next().value & FFFF),
-      TCG.generator(~G.next().value & FF, G.next().value >>> 1 & FFFF),
-      TCG.generator(~G.next().value >>> 10 & FF, PRODUCT & FFFF),
-      TCG.generator(k[0] & FF, G.next().value >>> 2),
-      TCG.generator(k[1] >>> 8 & FF, G.next().value & FFFF),
-      TCG.generator(~k[2] >>> 16 & FF, G.next().value >>> 1 & FFFF),
-      TCG.generator(~k[3] >>> 24, PRODUCT >>> 16) // create 8 TCG generators
+      TCG.generator(k[0] & FF, k[1] & FFFF),
+      TCG.generator(k[0] >>> 8 & FF, k[1] >>> 16),
+      TCG.generator(k[0] >>> 16 & FF, k[3] & FFFF),
+      TCG.generator(k[0] >>> 24, k[3] >>> 16),
+      TCG.generator(k[2] & FF, SUM & FFFF),
+      TCG.generator(k[2] >>> 8 & FF, SUM >>> 16),
+      TCG.generator(k[2] >>> 16 & FF,PRODUCT & FFFF),
+      TCG.generator(k[2] >>> 24, PRODUCT >>> 16) // create 8 TCG generators
     ], nk = k.map(reverseBits);
-    for(let i = 32; i--;)
-      nk[i & 3] ^= ROTR(G8[G.next().value & 7].next().value, i); // assign values based on long generator G
+    for(let i = 32; i--;) {
+      const temp = G.next().value;
+      nk[i & 3] ^= ROTR(G8[temp & 7].next().value << 16 | G8[temp >>> 15], i); // assign values based on long generator G
+    }
     if(debug) TCG.logData(k, nk, 'keygen');
     return nk;
   };
@@ -153,6 +156,14 @@
     for(let i = arr.length; i--;) arr[i] ^= k[i & 3];
     if(debug) TCG.logData(arr, 'xor');
   };
+
+  TCG.add = (k, arr, reverse) => { // used in the middle round
+    if(reverse)
+      for(let i = arr.length; i--;) arr[i] -= k[i & 3];
+    else
+      for(let i = arr.length; i--;) arr[i] += k[i & 3];
+    if(debug) TCG.logData(arr, 'add');
+  }
 
   TCG.sbox = (k, arr, reverse) => { // 16-bit word substitution (Theoretically 2^48 possible outputs)
     const gen = ROTR(k[0] << 1 ^ k[1] >>> 1, hammingWeight(k[2])) & FFFF, seed = ~k[2] ^ k[3] << 3 ^ k[3] >>> 4,
@@ -187,12 +198,13 @@
     if(debug) TCG.logData(before, arr.slice(), 'pbox');
   };
 
-  TCG.round = (k, arr, reverse) => { // round function
+  TCG.round = (k, arr, reverse, alternate) => { // round function
     if(reverse) {
       TCG.pbox(k, arr, reverse);
       TCG.sbox(k, arr, reverse);
     }
-    TCG.xor(k, arr);
+    if(alternate) TCG.add(k, arr, reverse);
+    else TCG.xor(k, arr);
     if(!reverse) {
       TCG.sbox(k, arr);
       TCG.pbox(k, arr);
@@ -207,7 +219,7 @@
     }
     if(debug) TCG.logData(IV, 'IV');
     for(let i = 0; i < ks.length - 1; i++)
-      TCG.round(ks[i], stream);
+      TCG.round(ks[i], stream, false, i == ks.length >> 1);
     TCG.xor(ks[ks.length - 1], stream);
     TCG.sbox(ks[ks.length - 1], stream);
     for(let i = arr.length; i--;)
@@ -234,7 +246,7 @@
         data = tempArr;
       } else {// ECB mode
         for(let i = 0; i < ks.length - 1; i++) {
-          TCG.round(ks[i], data);
+          TCG.round(ks[i], data, false, i == ks.length >> 1);
           if(debug) {
             TCG.logData(before, data, 'encrypt-' + i);
             before = data.slice();
@@ -272,7 +284,7 @@
             TCG.logData(before, data, 'decrypt-' + (i + 1));
             before = data.slice();
           }
-          TCG.round(ks[i], data, true);
+          TCG.round(ks[i], data, true, i == ks.length >> 1);
         }
         if(debug) TCG.logData(before, data, 'decrypt-0');
       }
@@ -316,7 +328,7 @@
     // replaceControls will replace characters that cause problems when rendered as text (DELETE, BACKSPACE, LINE FEED, etc.)
     if(replaceControls) str = str.replace(PICTURES, x => String.fromCharCode(x.codePointAt(0) - 9216)).replace(DELETE, '\x7f');
     return S2A(str);
-  } // WHY DID I SPEND SO MUCH TIME ON THIS
+  }
   function toFormat(arr, type, replaceControls){
     if(type == 2) return A2HEX(arr);
     if(type == 3) return btoa(A2S(arr));
