@@ -2,10 +2,15 @@
 Insecure block cipher cryptography based on triangular congruential generators. http://charcoding.github.io/TCG-Block-Cipher/
 
 ## TCG Generator
-A Triangular Congruential Generator is initialized with multiplier `a`, increment `b`, mask `m = 2**n - 1`, and seed `x`.  
+A Triangular Congruential Generator is initialized with multiplier `a` (must be odd number), increment `b` ∈ ℕ, mask `m = 2**n - 1`, and seed `x`, 0 ≤ x < m.  
 Each time `.next().value` is called, it returns x = [a(x<sup>2</sup> + x) / 2 + b] AND m  
 With carefully chosen parameters, the TCG will have a period = mask + 1.  
 When used in the cipher, they are generated from an index and a seed. The index determines `a` and `b` from the arrays of constants, and the seed determines the starting value `x`. Mask is either 65535 or 262143.
+
+Note: In JavaScript, `>>>` is the **Zero-fill right shift** operator, not circular bitwise rotate.  
+`>>> 1` is equivalent to dividing by 2 for positive integers.  
+It is used because the `>>` operator have sign-propagation.  
+Circular bitwise rotate is denoted by the function `ROTR(word, rotation)`.
 ### Constants
 `TCG.A16` is an array of 128 multiplier `a` values for 16 bit TCGs.  
 `TCG.B16` is an array of 128 increment `b` values for 16 bit TCGs.  

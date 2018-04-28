@@ -7,6 +7,7 @@
   * { font-size: 20px; }
   body { margin: 16px 48px; }
   #plain, #cipher { width: 100%; box-sizing: border-box; }
+  code { color: #0f0; background-color: #000; }
   </style>
 </head>
 <body>
@@ -48,8 +49,9 @@
     leaked through this cipher. Use at your own risk, and use industrial strength RSA or AES for encrypting important information instead.<br />
     That being said, you're always welcome to break this cipher and show me how you did it.<br />I tried to comment <a href="https://github.com/CharCoding/TCG-Block-Cipher/blob/master/index.html" title="View Source">my code</a> and write it in a somewhat clear structure, hopefully it helps.<br /><br />
     <b>Challenge: </b>Find the key from the following information:<br />
-    Mode of operation: ECB. Rounds: 5<br />
-    Plaintext:<br /><br />Triangular congruential generators differ from LCGs by having an intermediate step that finds the triangular number of the previous output first and using it to calculate the next output. This simple change avoids many of the weaknesses of LCG, such as the n-th least significant bit has a period of 2^n. This is not the case in TCG, as all bits have an equal, maximal period. For a visualization of the said improvement, visit https://jsfiddle.net/CharCoding/f90q2wo0/1/ .<br /><br />Ciphertext:<br /><br /><span style="overflow-wrap:break-word;word-break:break-all;">6Jpvf830joEtjhGMrx9tiJHDmOA549Os9zSIEJQmkbZ3/v8Fp/eWO514SfVPpJ/UHtdeS9M6rcCK8EyCXMtCV3pNtJmi+EVQsWAt7l80ATvRXOHvukYYyPMa76IkE02vZXEEmeNjJZteE7VSvRo95pKjy6L51Vm3usdyU7/5vtWDgEfC8kd0ryFTymSfXxY7uCdBCbdW/cB71/sOWALRoYywjOOQeTpCf/+6dgQbqJqiFtzAbDxSLiAgXCBNxt25cSNwlDKVEADklGWZUydgBQ8wbmfy/NMIgokJAVw5G70jn+SXqO737wiojec4D7Y/qUYBDSvfzeGCMRQ/L+wC3Cq5MTjJ2tu5oSwOBV1qAxvY/0fN9n6mVg85Fq29gCFVwmqxYn0gayP1Wraau9kMUeQsBa6+B7LyDoZ8ZNzs6YC0X/1mcX4XDxcL8MeZMQvlg40NS4pZ/2vp6asR4o6TM9I2pVqgFjjigw4Yut1klxMEF/HJOVrj7dUrnBWz1ocJHW1drpkyOPjitvsrKjodcGgeQz5K4GJhq7qKJOfjmpSmDTsUXi/I4JEWhgSKL4vOvROn0RzYDBE82EzgI0Ye5ZxT1nzkrHskfDZcLZ7BPGTXhN18EVtrS7Vrat6wLBmo</span>
+    Mode of operation: <code>ECB</code>. Rounds: <code>5</code><br />
+    <b>Plaintext:</b><br /><br />
+    <code>Triangular congruential generators differ from LCGs by having an intermediate step that finds the triangular number of the previous output first and using it to calculate the next output. This simple change avoids many of the weaknesses of LCG, such as the n-th least significant bit has a period of 2^n. This is not the case in TCG, as all bits have an equal, maximal period. For a visualization of the said improvement, visit https://jsfiddle.net/CharCoding/f90q2wo0/1/ .</code><br /><br /><b>Ciphertext:</b><br /><br /><code style="overflow-wrap:break-word;word-break:break-all;">6Jpvf830joEtjhGMrx9tiJHDmOA549Os9zSIEJQmkbZ3/v8Fp/eWO514SfVPpJ/UHtdeS9M6rcCK8EyCXMtCV3pNtJmi+EVQsWAt7l80ATvRXOHvukYYyPMa76IkE02vZXEEmeNjJZteE7VSvRo95pKjy6L51Vm3usdyU7/5vtWDgEfC8kd0ryFTymSfXxY7uCdBCbdW/cB71/sOWALRoYywjOOQeTpCf/+6dgQbqJqiFtzAbDxSLiAgXCBNxt25cSNwlDKVEADklGWZUydgBQ8wbmfy/NMIgokJAVw5G70jn+SXqO737wiojec4D7Y/qUYBDSvfzeGCMRQ/L+wC3Cq5MTjJ2tu5oSwOBV1qAxvY/0fN9n6mVg85Fq29gCFVwmqxYn0gayP1Wraau9kMUeQsBa6+B7LyDoZ8ZNzs6YC0X/1mcX4XDxcL8MeZMQvlg40NS4pZ/2vp6asR4o6TM9I2pVqgFjjigw4Yut1klxMEF/HJOVrj7dUrnBWz1ocJHW1drpkyOPjitvsrKjodcGgeQz5K4GJhq7qKJOfjmpSmDTsUXi/I4JEWhgSKL4vOvROn0RzYDBE82EzgI0Ye5ZxT1nzkrHskfDZcLZ7BPGTXhN18EVtrS7Vrat6wLBmo</code>
   </p>
   <script type="text/javascript">'use strict';
   /* Triangular Congruential Generator Block Cipher
