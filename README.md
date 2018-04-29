@@ -1,11 +1,13 @@
 # TCG-Block-Cipher
-Insecure block cipher cryptography based on triangular congruential generators. http://charcoding.github.io/TCG-Block-Cipher/
+Insecure block cipher cryptography based on Triangular Congruential Generators (also invented by me).  
+Demo: https://charcoding.github.io/TCG-Block-Cipher/  
+Reddit /r/crypto discussion: https://www.reddit.com/r/crypto/comments/8es7aw/need_help_breaking_a_homebrew_insecure_block/
 
 ## TCG Generator
 A Triangular Congruential Generator is initialized with multiplier `a` (must be odd number), increment `b` ∈ ℕ, mask `m = 2**n - 1`, and seed `x`, 0 ≤ x < m.  
 Each time `.next().value` is called, it returns x = [a(x<sup>2</sup> + x) / 2 + b] AND m  
 With carefully chosen parameters, the TCG will have a period = mask + 1.  
-When used in the cipher, they are generated from an index and a seed. The index determines `a` and `b` from the arrays of constants, and the seed determines the starting value `x`. Mask is either 65535 or 262143.
+When used in the cipher, they are generated from an index and a seed. The index determines `a` and `b` from the arrays of constants, and the seed determines the starting value `x`. Mask is either 65535 or 524287.
 
 Note: In JavaScript, `>>>` is the **Zero-fill right shift** operator, not circular bitwise rotate.  
 `>>> 1` is equivalent to dividing by 2 for positive integers.  
@@ -14,7 +16,7 @@ Circular bitwise rotate is denoted by the function `ROTR(word, rotation)`.
 ### Constants
 `TCG.A16` is an array of 128 multiplier `a` values for 16 bit TCGs.  
 `TCG.B16` is an array of 128 increment `b` values for 16 bit TCGs.  
-Same goes for `A18` and `B18`, except there are only 4 of each and they are for 18 bit TCGs.  
+Same goes for `A19` and `B19`, except there are only 8 of each and they are for 19 bit TCGs.  
 ## Encryption
 0. Initialize key from input, `k = Uint32Array(4);`
 	- if it is too short, repeat the input again
@@ -31,7 +33,7 @@ Same goes for `A18` and `B18`, except there are only 4 of each and they are for 
 0. Find the hamming weight of the 128-bit key
 1. Find the sum of the 4 ints
 2. Find the integer product of the 4 ints
-3. Create a 18-bit generator (index = hamming weight, bits 0\~1, seed = sum, bits 0\~17)
+3. Create a 19-bit generator (index = hamming weight, bits 0\~2, seed = sum, bits 0\~18)
 4. Create an array of 8 16-bit generators based on the current key
     - index = k[0] bits 0\~7, seed = k[1] bits 0\~15
     - index = k[0] bits 8\~15, seed = k[1] bits 16\~31
@@ -42,10 +44,10 @@ Same goes for `A18` and `B18`, except there are only 4 of each and they are for 
     - index = k[1] bits 16\~23, seed = product, bits 0\~15
     - index = k[1] bits 24\~31, seed = product, bits 16\~31
 5. Initialize the new key by reversing the bits of each word in the previous key
-6. Loop 32 times: (i = 31...0, rolled backwards)
-    0. `let temp =` 18-bit generator `.next().value`
-    1. Select a 16-bit generator from the array (index = temp, bits 0\~3)
-    2. Call 16-bit generator `.next().value << 15`, bitwise OR with `temp >>> 15`
+6. Loop 32 times: (i = 31...0, rolled backwards)  
+    0. `let temp =` 19-bit generator `.next().value`
+    1. Select a 16-bit generator from the array (index = temp, bits 0\~2)
+    2. Call 16-bit generator `.next().value << 16`, bitwise OR with `temp >>> 3`
     3. Circular right shift the result i bits
     4. XOR the result with new key `nk[i & 3]`
 7. New key is returned
@@ -82,5 +84,6 @@ For the middle round (if number of rounds is even, round down), add the key to e
 * Uses a lot of memory and is kind of slow
 * Key scheduling algorithm is basically security through obscurity
 * TCG generators are fully predictable
-* CTR mode only works with strings shorter than 2^20 characters
-* Other security vulnerabilities (95 more...)
+* Many potentially weak S-boxes and P-boxes due to large range
+* CTR mode only works with strings shorter than 2^21 characters
+* Other security vulnerabilities (94 more...)

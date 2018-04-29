@@ -28,7 +28,7 @@
     </select>
     Rounds: <input type="number" id="rounds" min="4" max="16" step="1" style="width:50px;" placeholder="5" />
     <input type="checkbox" id="logData" checked="checked" />
-    <label for="logData">Log data</label>
+    <label for="logData">Log data at each step to console</label>
     <br />
     <input type="text" id="plain" placeholder="Plaintext" /><br />
     <input type="button" id="decrypt" value="Decrypt" />
@@ -44,14 +44,14 @@
   </form>
   <p id="info"></p>
   <p id="description">
-    Triangular Congruential Generator Block Cipher v1.1 by <a href="http://github.com/CharCoding/TCG-Block-Cipher/" title="GitHub">CharCoding</a>, 2018, All Rights Reserved.<br />
+    Triangular Congruential Generator Block Cipher v1.2 by <a href="http://github.com/CharCoding/TCG-Block-Cipher/" title="GitHub">CharCoding</a>, 2018, All Rights Reserved.<br />
     <b>DISCLAIMER: </b>I know next to nothing about cryptography and I just committed a sin by "rolling my own crypto". I am not responsible for any important data
     leaked through this cipher. Use at your own risk, and use industrial strength RSA or AES for encrypting important information instead.<br />
     That being said, you're always welcome to break this cipher and show me how you did it.<br />I tried to comment <a href="https://github.com/CharCoding/TCG-Block-Cipher/blob/master/index.html" title="View Source">my code</a> and write it in a somewhat clear structure, hopefully it helps.<br /><br />
     <b>Challenge: </b>Find the key from the following information:<br />
     Mode of operation: <code>ECB</code>. Rounds: <code>5</code><br />
     <b>Plaintext:</b><br /><br />
-    <code>Triangular congruential generators differ from LCGs by having an intermediate step that finds the triangular number of the previous output first and using it to calculate the next output. This simple change avoids many of the weaknesses of LCG, such as the n-th least significant bit has a period of 2^n. This is not the case in TCG, as all bits have an equal, maximal period. For a visualization of the said improvement, visit https://jsfiddle.net/CharCoding/f90q2wo0/1/ .</code><br /><br /><b>Ciphertext:</b><br /><br /><code style="overflow-wrap:break-word;word-break:break-all;">6Jpvf830joEtjhGMrx9tiJHDmOA549Os9zSIEJQmkbZ3/v8Fp/eWO514SfVPpJ/UHtdeS9M6rcCK8EyCXMtCV3pNtJmi+EVQsWAt7l80ATvRXOHvukYYyPMa76IkE02vZXEEmeNjJZteE7VSvRo95pKjy6L51Vm3usdyU7/5vtWDgEfC8kd0ryFTymSfXxY7uCdBCbdW/cB71/sOWALRoYywjOOQeTpCf/+6dgQbqJqiFtzAbDxSLiAgXCBNxt25cSNwlDKVEADklGWZUydgBQ8wbmfy/NMIgokJAVw5G70jn+SXqO737wiojec4D7Y/qUYBDSvfzeGCMRQ/L+wC3Cq5MTjJ2tu5oSwOBV1qAxvY/0fN9n6mVg85Fq29gCFVwmqxYn0gayP1Wraau9kMUeQsBa6+B7LyDoZ8ZNzs6YC0X/1mcX4XDxcL8MeZMQvlg40NS4pZ/2vp6asR4o6TM9I2pVqgFjjigw4Yut1klxMEF/HJOVrj7dUrnBWz1ocJHW1drpkyOPjitvsrKjodcGgeQz5K4GJhq7qKJOfjmpSmDTsUXi/I4JEWhgSKL4vOvROn0RzYDBE82EzgI0Ye5ZxT1nzkrHskfDZcLZ7BPGTXhN18EVtrS7Vrat6wLBmo</code>
+    <code>Triangular congruential generators differ from LCGs by having an intermediate step that finds the triangular number of the previous output first and using it to calculate the next output. This simple change avoids many of the weaknesses of LCG, such as the n-th least significant bit has a period of 2^n. This is not the case in TCG, as all bits have an equal, maximal period. For a visualization of the said improvement, visit https://jsfiddle.net/CharCoding/f90q2wo0/1/ .</code><br /><br /><b>Ciphertext:</b><br /><br /><code style="overflow-wrap:break-word;word-break:break-all;">JTDWo1Gjt0T/VYgWaV/sDDnp27kg/nsRYzFytrz9M2EWISRdDx/DfxzlDGntwFbrTTg64U4pYKR5xR1+7yzohEhObLnVuquSUDYY5OJm0Vrqdzq1EVB1HjlsZ6gcnXgoFXC9HUAHyugF3Lkx89AFxl1vOYTsozzsNRoyA2vn8Td15d+P9psAVNL4thBRlI17pw+USLSw6ijvWCeQFfZpwSP/8b2VS/7CmOqg3yEueoIxHwuBmdn9ANSzoIzpCYaIbFO2duEQjZ5Y/rrYd1717+NXKxFKBztdg1uYBrmvf89O8iUMQQQmcyIIXrOVG5m9CTNEfSGOPWrGaJB/LQzKvEOzhl4+XYLuaYVnKI1aakqtKXTJx5YtzDx3ZXPeAQaNzveq5YE1a+awHBDF1qCXxwm6RvIKKcIhl598IMBnIJ/3lrUEa1gC1+/EKOpfHfJ5sTlqMSVkuX8XNNFVkIdBTqGdlJe2wrMhixMEDTfsIpmkuuzSCXoVzFFNswsMbfp8mTXPzeFIU8QUpH3wr+a4zckFY9Clmw1J6wswjRBlGe/f8OpchCuwjQPioUGULLla4585dSr4RLUG5h/qBgNlzCbP6wp7KLyVJFZ5MOddk8hV/1gVs8LG/shnWHMaU6vy</code>
   </p>
   <script type="text/javascript">'use strict';
   /* Triangular Congruential Generator Block Cipher
@@ -93,12 +93,13 @@
   CONTROLS = /[\0- \x7f]/g,
   PICTURES = /[\u2400-\u2420]/g,
   DELETE = /\u2421/g;
+  let debug = +logData.checked; // print each step of calculation to console
 
   /* Main TCG Cipher namespace
-   * This generator produces 2^16 16-bit uniformly distributed integers when initialized with the correct parameters.
-   * Literally the entire cipher relies on the "assumed" lack of correlation between consecutive numbers in a sequence...
+   * This generator produces  m  uniformly distributed integers when initialized with the correct parameters.
+   * Literally the entire cipher relies on the "assumed" lack of correlation between consecutive numbers in the sequence...
    * So, if this happens to be not as good as I thought (which probably is the case), the cipher is 100% insecure.
-   * Otherwise the cipher is 99% insecure. In other words, never use this cipher for anything at all.
+   * Otherwise the cipher is 99% insecure.
   */
   function* TCG(a, b, m, x){
     const i = x;
@@ -109,9 +110,8 @@
   // Generator constants for multiplier and adder (128 values * 2 configurations * 65536 starting points = 2^24 sequences)
   TCG.A16 = Int16Array.of(19,21,25,29,31,39,41,43,47,49,53,55,63,67,75,77,83,83,89,91,93,99,107,113,115,117,123,125,127,131,135,141,149,151,157,159,171,173,175,181,193,195,199,209,211,213,219,223,225,227,235,237,239,249,251,259,261,263,267,269,271,279,289,291,299,303,305,311,315,321,331,343,347,351,355,357,359,377,381,383,385,387,389,395,399,403,407,409,413,433,437,441,451,453,459,461,469,471,473,475,477,491,493,503,505,507,509,517,519,521,531,533,535,551,555,557,559,563,571,575,579,581,587,591,595,599,601,603);
   TCG.B16 = Uint16Array.of(7027,48722,29554,25898,48703,21679,22404,48667,27421,50846,57678,54379,58499,26801,12849,37470,33019,45563,23642,32973,39758,60063,56613,44510,26783,43934,57369,9214,31739,16427,53951,43566,25122,56247,46232,53147,47357,52188,55259,45866,26558,57649,17231,20062,21897,56702,64117,5269,35366,58599,38833,61604,61409,34594,54241,6641,35436,33811,28759,57962,43583,30493,64588,48941,3871,13457,44596,13573,62497,33676,24865,43943,11953,54443,39025,38414,23359,42764,4564,62827,58522,21765,56806,61667,37519,27881,16021,55870,25436,55052,30894,34226,22893,27772,27569,46106,502,24277,32614,54185,24914,15991,21578,16179,13026,38607,52388,31222,39559,61526,349,46702,49011,45121,64679,14830,21013,3781,9355,41015,33467,19298,52901,28295,47273,37667,22978,43109);
-  TCG.A18 = Int8Array.of(7, 23, 29, 31); // long generators have period 2^18
-  TCG.B18 = Int32Array.of(231859, 42211, 200860, 52257);
-  let debug = +logData.checked; // print each step of calculation to console
+  TCG.A19 = Int8Array.of(7, 11, 13, 19, 23, 29, 37, 47); // long generators have period 2^19
+  TCG.B19 = Int32Array.of(14777, 222271, 386462, 506713, 228781, 180182, 89754, 63043);
 
   // Cryptographic functions
   TCG.padMessage = (str, chunk = 16) => str + new Array(chunk - (str.length - 1 & chunk - 1)).join('\0');
@@ -123,7 +123,7 @@
       return TCG(TCG.A16[gen], TCG.B16[gen], FFFF, seed);
   };
 
-  TCG.longGenerator = (gen, seed) => TCG(TCG.A18[gen], TCG.B18[gen], 262143, seed);
+  TCG.longGenerator = (gen, seed) => TCG(TCG.A19[gen], TCG.B19[gen], 524287, seed);
 
   TCG.initKey = str => { // If key is too short it is repeated, if key is too long it is added on top
     const k = new Uint32Array(4), input = S2A(TCG.padMessage(str, 4));
@@ -136,7 +136,7 @@
     const HW = hammingWeight(k[0]) + hammingWeight(k[1]) + hammingWeight(k[2]) + hammingWeight(k[3]),
     SUM = k[0] + k[1] + k[2] + k[3],
     PRODUCT = Math.imul(Math.imul(k[0],k[1]),Math.imul(k[2],k[3])),
-    G = TCG.longGenerator(HW & 3, SUM & 262143), G8 = [
+    G = TCG.longGenerator(HW & 7, SUM & 524287), G8 = [
       TCG.generator(k[0] & FF, k[1] & FFFF),
       TCG.generator(k[0] >>> 8 & FF, k[1] >>> 16),
       TCG.generator(k[0] >>> 16 & FF, k[3] & FFFF),
@@ -148,7 +148,7 @@
     ], nk = k.map(reverseBits);
     for(let i = 32; i--;) {
       const temp = G.next().value;
-      nk[i & 3] ^= ROTR(G8[temp & 7].next().value << 16 | G8[temp >>> 15], i); // assign values based on long generator G
+      nk[i & 3] ^= ROTR(G8[temp & 7].next().value << 16 | temp >>> 3, i); // assign values based on long generator G
     }
     if(debug) TCG.logData(k, nk, 'keygen');
     return nk;
@@ -214,10 +214,10 @@
   };
 
   TCG.stream = (ks, arr, IV) => { // Stream generator for CTR Mode
-    const stream = new Uint32Array(arr.length), G = TCG.longGenerator((IV[0] ^ IV[3]) & 3, (IV[1] ^ IV[2]) & 262143), before = arr.slice();
+    const stream = new Uint32Array(arr.length), G = TCG.longGenerator((IV[0] ^ IV[3]) & 7, (IV[1] ^ IV[2]) & 524287), before = arr.slice();
     for(let i = arr.length; i--;){
       stream[i] = IV[i & 3];
-      if((i & 3) == 3) stream[i] = (stream[i] & -262144) | G.next().value; // maximum length is 2^20 characters in CTR mode
+      if((i & 3) == 3) stream[i] = (stream[i] & -524288) | G.next().value; // maximum length is 2^21 characters in CTR mode
     }
     if(debug) TCG.logData(IV, 'IV');
     for(let i = 0; i < ks.length - 1; i++)
@@ -232,7 +232,6 @@
   TCG.encrypt = data => {
     try {
       const then = performance.now(), k = TCG.initKey(key.value), // Let's measure the time cuz why not
-      //k0 = TCG.keygen(k), k1 = TCG.keygen(k0), k2 = TCG.keygen(k1), k3 = TCG.keygen(k2),
       ks = new Array(+rounds.value || 5);
       ks[0] = TCG.keygen(k);
       for(let i = 1; i < ks.length; i++)
@@ -298,24 +297,24 @@
   };
 
   TCG.logData = (before, after, method) => { // for cryptanalysis
-    console.log(+mode.value ? 'CTR' : 'ECB', method || after, 'length: ' + before.length);
-    console.log(A2HEX(before));
-    if(method) console.log(A2HEX(after));
-    console.log(A2S(before));
+    console.log(+mode.value ? 'CTR' : 'ECB', method || after, 'length: ' + before.length); // mode of cipher, function name, length of input
+    console.log(A2HEX(before)); // hex representation of input
+    if(method) console.log(A2HEX(after)); // hex representation if output
+    console.log(A2S(before)); // ASCII
     if(method) console.log(A2S(after));
     const total = before.length << 5;
     let sumBefore = 0, sumAfter = 0, sumXor = 0;
-    for(let i = before.length; i--;) {
+    for(let i = before.length; i--;) { // Count total bits set
       sumBefore += hammingWeight(before[i]);
       if(method) {
         sumAfter += hammingWeight(after[i]);
         sumXor += hammingWeight(before[i] ^ after[i]);
       }
     }
-    console.log(`0:1 = ${total - sumBefore}:${sumBefore}, ${(sumBefore / total * 100).toFixed(1)}%`);
+    console.log(`INPUT:  0:1 = ${total - sumBefore}:${sumBefore}, ${(sumBefore / total * 100).toFixed(1)}%`); // bits set in input
     if(method) {
-      console.log(`0:1 = ${total - sumAfter}:${sumAfter}, ${(sumAfter / total * 100).toFixed(1)}%`);
-      console.log(`0:1 = ${total - sumXor}:${sumXor}, ${(sumXor / total * 100).toFixed(1)}%`);
+      console.log(`OUTPUT: 0:1 = ${total - sumAfter}:${sumAfter}, ${(sumAfter / total * 100).toFixed(1)}%`); // bits set in output
+      console.log(`CHANGE: 0:1 = ${total - sumXor}:${sumXor}, ${(sumXor / total * 100).toFixed(1)}%`); // how many bits changed
     }
   } // I don't actually know how to do cryptanalysis, does this even help?
 
@@ -342,8 +341,8 @@
   // UI functions
   encrypt.addEventListener('click', () => TCG.encrypt(plain.value));
   decrypt.addEventListener('click', () => TCG.decrypt(cipher.value));
-  generateKey.addEventListener('click', () => 
-    // Note: screw IE users, fetch is dank af.
+  generateKey.addEventListener('click', () => {
+    /*// Generating key from third party website is a bad idea. Use local crypto instead.
     fetch('https://www.random.org/cgi-bin/randbyte?nbytes=16&format=h', {cache: 'no-store'})
     .then(x => x.text())
     .then(
@@ -351,7 +350,10 @@
       // offline fallback
       e => key.value = toFormat(crypto.getRandomValues(new Uint32Array(4)), +keyFormat.value)
     ).then(() => info.innerText = 'New key generated.')
-  );
+    //*/
+    key.value = toFormat(crypto.getRandomValues(new Uint32Array(4)), +keyFormat.value);
+    info.innerText = 'New key generated.';
+  });
   logData.addEventListener('click', e => debug = e.target.checked);
   clearPlain.addEventListener('click', () => plain.value = '');
   clearCipher.addEventListener('click', () => cipher.value = '');
