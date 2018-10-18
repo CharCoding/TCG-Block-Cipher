@@ -1,22 +1,23 @@
 # TCG-Block-Cipher
-Insecure block cipher cryptography based on Triangular Congruential Generators (also invented by me).  
-Demo: https://charcoding.github.io/TCG-Block-Cipher/  
+Insecure block cipher cryptography based on Triangular Congruential Generators (also invented by me).
+Demo: https://charcoding.github.io/TCG-Block-Cipher/
 Reddit /r/crypto discussion: https://www.reddit.com/r/crypto/comments/8es7aw/need_help_breaking_a_homebrew_insecure_block/
 
 ## TCG Generator
-A Triangular Congruential Generator is initialized with multiplier `a` (must be odd number), increment `b` ∈ ℕ, mask `m = 2**n - 1`, and seed `x`, 0 ≤ x < m.  
-Each time `.next().value` is called, it returns x = [a(x<sup>2</sup> + x) / 2 + b] AND m  
-With carefully chosen parameters, the TCG will have a period = mask + 1.  
+A Triangular Congruential Generator is initialized with multiplier `a` (must be odd number), increment `b` ∈ ℕ, mask `m = 2**n - 1`, and seed `x`, 0 ≤ x < m.
+To demonstrate their improvement over linear congruential generators, visit https://charcoding.github.io/TCG-Block-Cipher/graphs.html.
+Each time `.next().value` is called, it returns x = [a(x<sup>2</sup> + x) / 2 + b] AND m
+With carefully chosen parameters, the TCG will have a period = mask + 1.
 When used in the cipher, they are generated from an index and a seed. The index determines `a` and `b` from the arrays of constants, and the seed determines the starting value `x`. Mask is either 65535 or 524287.
 
-Note: In JavaScript, `>>>` is the **Zero-fill right shift** operator, not circular bitwise rotate.  
-`>>> 1` is equivalent to dividing by 2 for positive integers.  
-It is used because the `>>` operator have sign-propagation.  
+Note: In JavaScript, `>>>` is the **Zero-fill right shift** operator, not circular bitwise rotate.
+`>>> 1` is equivalent to dividing by 2 for positive integers.
+It is used because the `>>` operator have sign-propagation.
 Circular bitwise rotate is denoted by the function `ROTR(word, rotation)`.
 ### Constants
-`TCG.A16` is an array of 128 multiplier `a` values for 16 bit TCGs.  
-`TCG.B16` is an array of 128 increment `b` values for 16 bit TCGs.  
-Same goes for `A19` and `B19`, except there are only 8 of each and they are for 19 bit TCGs.  
+`TCG.A16` is an array of 128 multiplier `a` values for 16 bit TCGs.
+`TCG.B16` is an array of 128 increment `b` values for 16 bit TCGs.
+Same goes for `A19` and `B19`, except there are only 8 of each and they are for 19 bit TCGs.
 ## Encryption
 0. Initialize key from input, `k = Uint32Array(4);`
 	- if it is too short, repeat the input again
@@ -44,7 +45,7 @@ Same goes for `A19` and `B19`, except there are only 8 of each and they are for 
     - index = k[1] bits 16\~23, seed = product, bits 0\~15
     - index = k[1] bits 24\~31, seed = product, bits 16\~31
 5. Initialize the new key by reversing the bits of each word in the previous key
-6. Loop 32 times: (i = 31...0, rolled backwards)  
+6. Loop 32 times: (i = 31...0, rolled backwards)
     0. `let temp =` 19-bit generator `.next().value`
     1. Select a 16-bit generator from the array (index = temp, bits 0\~2)
     2. Call 16-bit generator `.next().value << 16`, bitwise OR with `temp >>> 3`
@@ -52,7 +53,7 @@ Same goes for `A19` and `B19`, except there are only 8 of each and they are for 
     4. XOR the result with new key `nk[i & 3]`
 7. New key is returned
 ## Key whitening
-For all rounds except the middle round, each 128-bit data block is XORed with the key.  
+For all rounds except the middle round, each 128-bit data block is XORed with the key.
 For the middle round (if number of rounds is even, round down), add the key to each 128-bit data block, then mod 2<sup>32</sup>. (subtract if decrypting)
 ## Substitution box
 0. Indices are calculated based on k[0], k[1], and hamming weight of k[2]:

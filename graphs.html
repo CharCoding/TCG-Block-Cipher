@@ -5,12 +5,14 @@
     <style type="text/css">
     body { margin: 0; }
     canvas { width: 100%; height: 100% }
+    div { position: absolute; bottom: 0; }
     </style>
     <script src="gl-matrix-min.js"></script>
     <script src="phoria-min.js"></script>
   </head>
   <body>
     <canvas id="c"></canvas>
+    <div id="info">3D plot of 10-bit congruential generators. Press 1 for Linear Congruential Generator, 2 for (generalized) Quadratic CG, 3 for Triangular CG, 4 for Quartic CG. Move mouse around to rotate the graph. Uses <a href="http://www.kevs3d.co.uk/dev/phoria/index.html">Phoria.js</a> for rendering.</div>
     <script type="text/ecmascript">
     const w = window.innerWidth, h = window.innerHeight,
     scene = new Phoria.Scene(), renderer = new Phoria.CanvasRenderer(c);
@@ -41,9 +43,9 @@
     }));
     function *LCG(a, b, m, x = 0) { while(true) yield x=a*x+b&m; } // linear (best known & studied algorithm)
     function *XCG(a, b, c, m, x = 0) { while(true) yield x=(x*(a*x+b)+c)%m; } // generalized quadratic (also well studied)
-    function *QCG(a, b, m, x = 0) { while(true) yield x=a*(x*x+x>>>1)+b&m; } // quadratic (invented by me)
-    function *PCG(a, b, m, x = 0) { while(true) yield x=a*(x*(x+1)*(x*(x+1)-1)>>>1)+b&m; } // polynomial (quartic, invented by me)
-    const lcg = LCG(761, 1013, 1023), xcg = XCG(231, 43, 97, 1029, 1), qcg = QCG(763, 1013, 1023), pcg = PCG(763, 1013, 1023);
+    function *TCG(a, b, m, x = 0) { while(true) yield x=a*(x*x+x>>>1)+b&m; } // triangular (invented by me)
+    function *PCG(a, b, m, x = 0) { while(true) yield x=a*(x*(x+1)*(x*(x+1)-1)>>>1)+b&m; } // quartic (invented by me)
+    const lcg = LCG(761, 1013, 1023), xcg = XCG(231, 43, 97, 1029, 1), tcg = TCG(763, 1013, 1023), pcg = PCG(763, 1013, 1023);
     const points = Phoria.Entity.create({
       points: [],
       style: {
@@ -55,7 +57,7 @@
       }
     });
     for(let i = 1024; i--;)
-      points.points.push({ x: qcg.next().value - 512, y: qcg.next().value - 512, z: qcg.next().value - 512});
+      points.points.push({ x: tcg.next().value - 512, y: tcg.next().value - 512, z: tcg.next().value - 512});
     scene.graph.push(points);
     /*
     points.style = {
@@ -173,9 +175,9 @@
         break;
         case 51:
           for(let i = 1024; i--;) {
-            points.points[i].x = qcg.next().value - 512;
-            points.points[i].y = qcg.next().value - 512;
-            points.points[i].z = qcg.next().value - 512;
+            points.points[i].x = tcg.next().value - 512;
+            points.points[i].y = tcg.next().value - 512;
+            points.points[i].z = tcg.next().value - 512;
           }
           points.style.color = [255, 255, 0];
         break;
