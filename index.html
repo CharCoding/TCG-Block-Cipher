@@ -51,7 +51,7 @@
     <b>Challenge: </b>Find the key from the following information:<br />
     Mode of operation: <code>ECB</code>. Rounds: <code>5</code><br />
     <b>Plaintext:</b><br /><br />
-    <code>Triangular congruential generators differ from LCGs by having an intermediate step that finds the triangular number of the previous output first and using it to calculate the next output. This simple change avoids many of the weaknesses of LCG, such as the n-th least significant bit has a period of 2^n. This is not the case in TCG, as all bits have an equal, maximal period. For a visualization of the said improvement, visit https://jsfiddle.net/CharCoding/f90q2wo0/1/ .</code><br /><br /><b>Ciphertext:</b><br /><br /><code style="overflow-wrap:break-word;word-break:break-all;">JTDWo1Gjt0T/VYgWaV/sDDnp27kg/nsRYzFytrz9M2EWISRdDx/DfxzlDGntwFbrTTg64U4pYKR5xR1+7yzohEhObLnVuquSUDYY5OJm0Vrqdzq1EVB1HjlsZ6gcnXgoFXC9HUAHyugF3Lkx89AFxl1vOYTsozzsNRoyA2vn8Td15d+P9psAVNL4thBRlI17pw+USLSw6ijvWCeQFfZpwSP/8b2VS/7CmOqg3yEueoIxHwuBmdn9ANSzoIzpCYaIbFO2duEQjZ5Y/rrYd1717+NXKxFKBztdg1uYBrmvf89O8iUMQQQmcyIIXrOVG5m9CTNEfSGOPWrGaJB/LQzKvEOzhl4+XYLuaYVnKI1aakqtKXTJx5YtzDx3ZXPeAQaNzveq5YE1a+awHBDF1qCXxwm6RvIKKcIhl598IMBnIJ/3lrUEa1gC1+/EKOpfHfJ5sTlqMSVkuX8XNNFVkIdBTqGdlJe2wrMhixMEDTfsIpmkuuzSCXoVzFFNswsMbfp8mTXPzeFIU8QUpH3wr+a4zckFY9Clmw1J6wswjRBlGe/f8OpchCuwjQPioUGULLla4585dSr4RLUG5h/qBgNlzCbP6wp7KLyVJFZ5MOddk8hV/1gVs8LG/shnWHMaU6vy</code>
+    <code>Triangular congruential generators differ from LCGs by having an intermediate step that finds the triangular number of the previous output first and using it to calculate the next output. This simple change avoids many of the weaknesses of LCG, such as the n-th least significant bit has a period of 2^n. This is not the case in TCG, as all bits have an equal, maximal period. For a visualization of the said improvement, visit https://jsfiddle.net/CharCoding/f90q2wo0/1/ .</code><br /><br /><b>Ciphertext:</b><br /><br /><code style="overflow-wrap:break-word;word-break:break-all;">Q1LbbKlyzLArWWOZIixCwSaeRz4IphuTep+EC2ALfDDJcsxKGGESsqqexIIhCxGwBnBiSg0mNpYfz+K6fHj1GLfWqPVQyWuGt5lRovmKVtI2Jc4NpjsGRg5UR0JspFimkBWK4oSNYiwHYNfe0nfdV/9b5JCqUSCvTCycjZcvdEztn+Q352qOs1HFp/+0GalYOThiUGpF37ikoRW2ovgalGavr6kPf2Nw/1ILZNSr7BWOw2yxL3QG6jK9ZVL3mUJCRLXGOC8uTQUe/T8A8nxJrHKfujVYqXiKfhieDLHQhNcEKeHMXpG4geDE9LJyFCugis/ujnBK+gjFxg6YS1loXhULUcEb8byK+zXDiJkOLO/jywYuEtjROMlRZy3PplzIHBVYJLPHQyfiVUSapC8h9/y95SAbYxuxu+lkus1eiovaRoSVnXsjQEUTBy4uvN5LExURP/wLVd5pNKrCwINP6Kt7GflH+pSOhX7mwwEVqrL/ZUzuPQ38wqOvMjN47Bg0JLajCMXmnO5kNlcriZWGm6RwIBapaz1cegZG8t6AQQvp/D7yW5xD+MVW88Ol8YN2PRB1QgzMT+AULw545nVWKP2JL3SDYvbWszRYbdQu9wPug+5xEswTMdBD5+kYAUKO</code>
   </p>
   <script type="text/javascript">'use strict';
   /* Triangular Congruential Generator Block Cipher
@@ -63,7 +63,7 @@
    * Mode of operation: ECB, CTR
    * Disclaimer: I am not responsible for any mental or physical damage caused by reading the following code.
    */
-  const FF = 255, FFFF = 65535, // Constants and utility functions
+  const F = 15, FF = 255, FFFF = 65535, FFFFFF = 16777215, // Constants and utility functions
   utf8Encode = msg => unescape(encodeURIComponent(msg)), // UTF-8 support
   utf8Decode = msg => {
     try {
@@ -72,9 +72,9 @@
       return msg;
     }
   },
-  A2S = a => String.fromCharCode.apply(null, new Uint8Array(a.buffer)).replace(/\0+$/, ''), // Magic (array to string)
+  A2S = a => String.fromCharCode(...new Uint8Array(a.buffer)).replace(/\0+$/, ''), // Magic (array to string)
   S2A = s => new Uint32Array(Uint8Array.from(s, e => e.charCodeAt(0)).buffer), // More magic (string to array)
-  A2HEX = a => a.reduce((str, e) => str += (4294967296 + e).toString(16).slice(1), ''), // Whaaaaat (array to hex)
+  A2HEX = a => a.reduce((str, e) => str += e.toString(16).padStart(8, '0'), ''), // Whaaaaat (array to hex)
   HEX2A = s => Uint32Array.from(s.replace(/.{1,8}/g, ' 0x$&').split(' ').slice(1)), // It works and I have no idea why (hex to array)
   hammingWeight = word => { // count bits set in 32 bit ints
     word = word - ((word >> 1) & 1431655765);
@@ -108,10 +108,12 @@
   }
 
   // Generator constants for multiplier and adder (128 values * 2 configurations * 65536 starting points = 2^24 sequences)
-  TCG.A16 = Int16Array.of(19,21,25,29,31,39,41,43,47,49,53,55,63,67,75,77,83,83,89,91,93,99,107,113,115,117,123,125,127,131,135,141,149,151,157,159,171,173,175,181,193,195,199,209,211,213,219,223,225,227,235,237,239,249,251,259,261,263,267,269,271,279,289,291,299,303,305,311,315,321,331,343,347,351,355,357,359,377,381,383,385,387,389,395,399,403,407,409,413,433,437,441,451,453,459,461,469,471,473,475,477,491,493,503,505,507,509,517,519,521,531,533,535,551,555,557,559,563,571,575,579,581,587,591,595,599,601,603);
+  TCG.A16 = Uint16Array.of(19,21,25,29,31,39,41,43,47,49,53,55,63,67,75,77,83,83,89,91,93,99,107,113,115,117,123,125,127,131,135,141,149,151,157,159,171,173,175,181,193,195,199,209,211,213,219,223,225,227,235,237,239,249,251,259,261,263,267,269,271,279,289,291,299,303,305,311,315,321,331,343,347,351,355,357,359,377,381,383,385,387,389,395,399,403,407,409,413,433,437,441,451,453,459,461,469,471,473,475,477,491,493,503,505,507,509,517,519,521,531,533,535,551,555,557,559,563,571,575,579,581,587,591,595,599,601,603);
   TCG.B16 = Uint16Array.of(7027,48722,29554,25898,48703,21679,22404,48667,27421,50846,57678,54379,58499,26801,12849,37470,33019,45563,23642,32973,39758,60063,56613,44510,26783,43934,57369,9214,31739,16427,53951,43566,25122,56247,46232,53147,47357,52188,55259,45866,26558,57649,17231,20062,21897,56702,64117,5269,35366,58599,38833,61604,61409,34594,54241,6641,35436,33811,28759,57962,43583,30493,64588,48941,3871,13457,44596,13573,62497,33676,24865,43943,11953,54443,39025,38414,23359,42764,4564,62827,58522,21765,56806,61667,37519,27881,16021,55870,25436,55052,30894,34226,22893,27772,27569,46106,502,24277,32614,54185,24914,15991,21578,16179,13026,38607,52388,31222,39559,61526,349,46702,49011,45121,64679,14830,21013,3781,9355,41015,33467,19298,52901,28295,47273,37667,22978,43109);
-  TCG.A19 = Int8Array.of(7, 11, 13, 19, 23, 29, 37, 47); // long generators have period 2^19
-  TCG.B19 = Int32Array.of(14777, 222271, 386462, 506713, 228781, 180182, 89754, 63043);
+  //TCG.A19 = Int8Array.of(7, 11, 13, 19, 23, 29, 37, 47); // long generators have period 2^19
+  //TCG.B19 = Int32Array.of(14777, 222271, 386462, 506713, 228781, 180182, 89754, 63043);
+  TCG.A24 = Uint8Array.of(13, 19, 23, 29, 41, 43, 47, 53, 57, 59, 67, 69, 77, 79, 83, 89); // period 2^24
+  TCG.B24 = Uint32Array.of(9574662, 12161091, 11419271, 488246, 7275484, 13489393, 11220997, 9667556, 7293988, 6796727, 4623555, 3906076, 12813934, 8872101, 9509227, 6151474);
 
   // Cryptographic functions
   TCG.padMessage = (str, chunk = 16) => str + new Array(chunk - (str.length - 1 & chunk - 1)).join('\0');
@@ -119,11 +121,10 @@
   TCG.generator = (gen, seed) => { // return a generator from given parameter and seed
     if(gen & 128)
       return TCG(65536 - TCG.A16[gen & 127], 32767 ^ TCG.B16[gen & 127], FFFF, seed);
-    else
-      return TCG(TCG.A16[gen], TCG.B16[gen], FFFF, seed);
+    return TCG(TCG.A16[gen], TCG.B16[gen], FFFF, seed);
   };
 
-  TCG.longGenerator = (gen, seed) => TCG(TCG.A19[gen], TCG.B19[gen], 524287, seed);
+  TCG.longGenerator = (gen, seed) => TCG(TCG.A24[gen], TCG.B24[gen], FFFFFF, seed);
 
   TCG.initKey = str => { // If key is too short it is repeated, if key is too long it is added on top
     const k = new Uint32Array(4), input = S2A(TCG.padMessage(str, 4));
@@ -136,7 +137,7 @@
     const HW = hammingWeight(k[0]) + hammingWeight(k[1]) + hammingWeight(k[2]) + hammingWeight(k[3]),
     SUM = k[0] + k[1] + k[2] + k[3],
     PRODUCT = Math.imul(Math.imul(k[0],k[1]),Math.imul(k[2],k[3])),
-    G = TCG.longGenerator(HW & 7, SUM & 524287), G8 = [
+    G = TCG.longGenerator(HW & F, SUM & FFFFFF), G8 = [
       TCG.generator(k[0] & FF, k[1] & FFFF),
       TCG.generator(k[0] >>> 8 & FF, k[1] >>> 16),
       TCG.generator(k[0] >>> 16 & FF, k[3] & FFFF),
@@ -148,7 +149,7 @@
     ], nk = k.map(reverseBits);
     for(let i = 32; i--;) {
       const temp = G.next().value;
-      nk[i & 3] ^= ROTR(G8[temp & 7].next().value << 16 | temp >>> 3, i); // assign values based on long generator G
+      nk[i & 3] ^= ROTR(G8[temp & 7].next().value << 16 ^ temp >>> 3, i); // assign values based on long generator G
     }
     if(debug) TCG.logData(k, nk, 'keygen');
     return nk;
@@ -179,19 +180,20 @@
     if(debug) TCG.logData(before, arr.slice(), 'sbox');
   };
 
-  TCG.pbox = (k, arr, reverse) => { // 128-bit block permutation (Theoretically 2^24 possible outputs)
-    const gen = ROTR(k[3] << 2 ^ k[2] >>> 1, hammingWeight(k[1])) & FF, seed = reverseBits(k[1]) ^ k[0] << 4 ^ k[0] >>> 3,
-    G = TCG.generator(gen, seed & FFFF), before = arr.slice();
-    let order = [];
-    for(let i = 0; i < 128; i++) order[G.next().value] = i; // bucket sort 128 indices based on generator output
-    order = Uint8Array.from(order.filter(n => true));
+  TCG.pbox = (k, arr, reverse) => { // 128-bit block permutation (Theoretically 2^28 possible outputs)
+    const gen = ROTR(k[3] << 2 ^ k[2] >>> 1, hammingWeight(k[1])) & F, seed = reverseBits(k[1]) ^ k[0] << 4 ^ k[0] >>> 3,
+    G = TCG.longGenerator(gen, seed & FFFFFF), before = arr.slice();
+    let order = new Array(128);
+    for(let i = 128; i--;) order[i] = [G.next().value, i]; // bucket sort 128 indices based on generator output
+    order.sort((a, b) => a[0] - b[0]);
+    order = Uint8Array.from(order, x => x[1]);
     if(reverse)
       for(let i = 0, l = arr.length; i < l; i += 4){
         const tempArr = arr.slice(i, i + 4);
         for(let j = i; j < i + 4; j++) arr[j] = 0;
         for(let j = 128; j--;) arr[i + (order[j] >>> 5)] |= ((tempArr[j >>> 5] >>> (j & 31)) & 1) << (order[j] & 31);
       }
-    else 
+    else
       for(let i = 0, l = arr.length; i < l; i += 4){
         const tempArr = arr.slice(i, i + 4);
         for(let j = i; j < i + 4; j++) arr[j] = 0;
@@ -214,10 +216,10 @@
   };
 
   TCG.stream = (ks, arr, IV) => { // Stream generator for CTR Mode
-    const stream = new Uint32Array(arr.length), G = TCG.longGenerator((IV[0] ^ IV[3]) & 7, (IV[1] ^ IV[2]) & 524287), before = arr.slice();
+    const stream = new Uint32Array(arr.length), G = TCG.longGenerator((IV[0] ^ IV[3]) & F, (IV[1] ^ IV[2]) & FFFFFF), before = arr.slice();
     for(let i = arr.length; i--;){
       stream[i] = IV[i & 3];
-      if((i & 3) == 3) stream[i] = (stream[i] & -524288) | G.next().value; // maximum length is 2^21 characters in CTR mode
+      if((i & 3) == 3) stream[i] = (stream[i] & 0xff000000) | G.next().value; // maximum length is 2^26 characters in CTR mode
     }
     if(debug) TCG.logData(IV, 'IV');
     for(let i = 0; i < ks.length - 1; i++)
