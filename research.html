@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Polynomial Congruential Generators</title>
+  <style type="text/css">
+  body {
+    position: absolute;
+    background-color: #111;
+    left: 50%;
+    top: 0;
+    width: 1080px;
+    margin-left: -540px;
+    font-size: 1.5em;
+    line-height: 160%;
+  }
+  h1 {
+    text-align: center;
+  }
+  sup {
+    font-size: 0.8em !important;
+  }
+  li {
+    list-style: none;
+  }
+  * {
+    color: #eee;
+  }
+  span.a {
+    color: #0ff;
+  }
+  span.y {
+    color: #ff0;
+  }
+  span.m {
+    color: #f0f;
+  }
+  span.l {
+    color: #0f0;
+  }
+  span.g {
+    color: #888;
+  }
+  a {
+    text-decoration: none;
+  }
+  a:hover {
+    text-decoration: underline;
+  }
+  #latticeGraph {
+    width: 1080px;
+    height: 640px;
+  }
+  #cycleChart {
+    margin: 0 28px;
+    width: 1024px;
+    height: 512px;
+    image-rendering: optimizeSpeed;
+  }
+  #cycleGraph {
+    margin: 0 140px;
+    width: 800px;
+    height: 800px;
+  }
+  #data {
+    font-family: "Consolas", monospace;
+    text-align: center;
+  }
+  input {
+    color: #000;
+    font-size: 1em;
+  }
+  input[type="number"] {
+    width: 60px;
+  }
+  pre {
+    line-height: 120%;
+  }
+  </style>
+  <!--script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script-->
+  <script type="text/javascript">
+  MathJax = {
+    loader: {load: ['[tex]/ams']},
+    tex: {inlineMath: [['$', '$']], packages: {'[+]': ['ams']}}
+  };
+  </script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  <script type="text/javascript" src="gl-matrix-min.js" defer></script>
+  <script type="text/javascript" src="phoria-min.js" defer></script>
+</head>
+<body>
+  <h1>Polynomial Congruential Generators</h1>
+  $$x_{n+1} = a\frac{x_n(x_n+1)}{2}+c \mod m$$
+  <p>
+    where $a, 1 \le a < m$ is the <i>multiplier</i>,<br>
+    $c, 1 \le c < m$ is the <i>adder</i>,<br>
+    $m = 2^k$ is the <i>modulus</i>, and<br>
+    $x, 0 \le x_n < m$ is the sequence of pseudorandom numbers.<br>
+    The polynomial isn't limited to 2 degrees. It can be any degree that's a power of 2 in the following form:<br>
+    $y_{n+1} = a(y_n(y_n+1)-1)\frac{y_n(y_n+1)}{2}+c \mod m$<br>
+    $z_{n+1} = a(z_n(z_n+1)-1)(z_n(z_n+1)(z_n(z_n+1)-1)-1)\frac{z_n(z_n+1)}{2}+c \mod m$ , etc.
+  </p>
+  <h3>Advantages over the Linear Congruential Generator:</h3>
+  <li>
+    <ul><a href="#period">- Every bit of the output has equal period. 🔗</a></ul>
+    <ul><a href="#lattice">- n-consecutive values do not fall within a hyperplane lattice in $\mathbb{Z}^n$. 🔗</a></ul>
+    <ul>- Cannot reverse engineer parameters $a$ and $c$ from a small sample of consecutive output<sup>[<i style="color:#0ff;">citation needed</i>]</sup>.</ul>
+    <ul>- Difficult to jump forward or backward - although undesirable for some applications.</ul>
+  </li>
+  <h3>Disadvantages:</h3>
+  <li>
+    <ul><a href="#parameters">- Difficult to find suitable parameters to achieve maximal period. 🔗</a>
+      <li>
+        <ul>- Bruteforcing maximal period takes exponential time.</ul>
+      </li>
+    </ul>
+    <ul>- Multiplication is slower than other operations.</ul>
+    <ul><a href="#overflow">- Special case needed when implementing generator with $m - 1$ equal to <code style="color:#abc;">UINT_MAX</code>. 🔗</a></ul>
+    <ul>- Possibly harder to analyze.</ul>
+  </li>
+  <h3 id="period">Lower bit periods</h3>
+  $x_0 = 0$ in both generators. <input type="button" id="genNext" value="generate" />
+  <table>
+    <thead>
+      <tr>
+        <th>$n$</th><th>LCG: $\small{x_{n+1}=137x_n+9531381 \mod 2^{24}}$</th><th>PCG: $\small{x_{n+1}=137\frac{x_n(x_n+1)}{2}+9531382 \mod 2^{24}}$</th>
+      </tr>
+    </thead>
+    <tbody id="data">
+    </tbody>
+    <tfoot>
+      <tr><td colspan="3">By observation, the $n$-th lowest bit of the LCG output has period $2^n$, while the PCG output does not show this pattern.</td></tr>
+    </tfoot>
+  </table>
+  <h3 id="lattice">Consecutive output as points in 3-space</h3>
+  <input type="button" value="LCG" id="genlcg" />
+  <input type="button" value="QCG" id="genqcg" />
+  <input type="button" value="PCG²" id="genpcg2" />
+  <input type="button" value="PCG⁴" id="genpcg4" />
+  $PCG^n$ denotes a PCG of degree $n$.<br>
+  <canvas id="latticeGraph" width="1080" height="640"></canvas>
+  The QCG (Quadratic Congruential Generator) by Donald E. Knuth is of the form $x_{n+1}=ax^2+bx+c \mod m$, $a, b, c \in \mathbb{Z}$.<br>
+  In LCG, consecutive outputs fall into a regular lattice. In QCG, the points fall into lines. In PCG² and PCG⁴, most points appear to be randomly placed while only a few small sets of points fall into lines.
+  <h3 id="parameters">Generator period and cycle decomposition</h3>
+  Load cycle count chart for $m$ = 2^<input id="cycleMod" type="number" value="6" step="1" min="2" max="8">.
+  Click a pixel to view its cycle decomposition. Alternatively, change the parameters below.
+  <canvas id="cycleChart" width="256" height="128"></canvas>
+  <br>a = <input id="cycleA" type="number" step="2" min="1" max="255" value="1">,
+  c = <input id="cycleC" type="number" step="1" min="0" max="255" value="32"> &rarr;
+  cycles = <span id="cycleCount">1</span><br>
+  <canvas id="cycleGraph" width="800" height="800"></canvas>
+  <h3>Special properties of parameters</h3>
+  If $a \equiv 1 \pmod 4$ and $c \equiv 0 \pmod 2$, the number of cycles is odd.<br>
+  If $a \equiv 3 \pmod 4$ and $c \equiv 1 \pmod 2$, the number of cycles is also odd.<br>
+  Otherwise, the number of cycles is even.<br>
+  Generally, the generators come in pairs:<br>Let $x_{n+1}=a\frac{x_n(x_n+1)}{2}+c \mod m$, and $y_{n+1}=a'\frac{y_n(y_n+1)}{2}+c' \mod m$,<br> s.t. $a' = m - a$ and $c' = \left(\frac{m}{2} - 1\right) \oplus c$, where $\oplus$ denotes the bitwise exclusive or.<br>If $x_0 + y_0 = m - 1$, then $x_n + y_n = m - 1$ for all $n$. $x$ and $y$ are a pair of generators whose output is the 1's complement of each other, regardless of the period of the generators.
+  <h3>General implementation in C:</h3>
+  <pre>    <span class="a">unsigned int</span> a = <span class="y">137</span>; <span class="g">// largest known maximal period generator</span>
+    <span class="a">unsigned int</span> c = <span class="y">9531382</span>;
+    <span class="a">unsigned int</span> x = <span class="y">0</span>; <span class="g">// some starting seed 0 <= x <= m</span>
+    <span class="a">unsigned int</span> m = <span class="y">0xffffff</span>; <span class="g">// m = 2^24 - 1, bitmask</span>
+    <span class="a">unsigned int</span> <span class="l">pcg_next</span>() {
+        <span class="m">return</span> x = a * (x * (x + <span class="y">1</span>) >> <span class="y">1</span>) + c & m;
+    }</pre>
+  <h3 id="overflow">Avoiding integer overflow:</h3>
+  <pre>    <span class="a">unsigned int</span> a = <span class="y">123456789</span>; <span class="g">// unknown period, a mod 4 == 1</span>
+    <span class="a">unsigned int</span> c = <span class="y">0x5f375a86</span>; <span class="g">// guarantee odd # of cycles</span>
+    <span class="a">unsigned int</span> x = <span class="y">0</span>; <span class="g">// 0 <= x <= m = 2^32 - 1</span>
+    <span class="a">unsigned int</span> <span class="l">pcg_next</span>() {
+        <span class="a">bool</span> bit = x & <span class="y">1</span>; <span class="g">// bitshift right before overflow (x + 1) can occur</span>
+        <span class="m">return</span> x = a * ((x >> !bit) * ((x >> bit) + <span class="y">1</span>)) + c;
+    }</pre>
+  Created by Qiyuan (Charly) Cui, 2020.
+  <script type="text/javascript">'use strict';
+function *LCG(a, b, m, x = 0) { while(true) yield x=a*x+b&m; }
+function *QCG(a, b, c, m, x = 0) { while(true) yield x=(x*(a*x+b)+c)%m; }
+function *PCG2(a, b, m, x = 0) { while(true) yield x=a*(x*(x+1)>>>1)+b&m; }
+function *PCG4(a, b, m, x = 0) { while(true) yield x=a*(x*(x+1)*(x*(x+1)-1)>>>1)+b&m; }
+const lcg24 = LCG(137, 9531381, 0xffffff), pcg24 = PCG2(137, 9531382, 0xffffff);
+let genIndex = 1;
+for(; genIndex < 16; ++genIndex) {
+  data.innerHTML += `<tr><td>${genIndex}</td><td>${lcg24.next().value.toString(2).padStart(24, '0')}</td><td>${pcg24.next().value.toString(2).padStart(24, '0')}</td></tr>`;
+}
+genNext.onclick = e => {
+  data.removeChild(data.firstElementChild);
+  data.innerHTML += `<tr><td>${genIndex++}</td><td>${lcg24.next().value.toString(2).padStart(24, '0')}</td><td>${pcg24.next().value.toString(2).padStart(24, '0')}</td></tr>`;
+}
+const chartCTX = cycleChart.getContext('2d', { alpha: false }),
+  graphCTX = cycleGraph.getContext('2d', { alpha: false });
+let arr;
+graphCTX.textAlign = 'center';
+graphCTX.textBaseline = 'middle';
+graphCTX.translate(400, 400);
+graphCTX.fillStyle = '#fff';
+cycleMod.oninput = e => {
+  const v = +cycleMod.value;
+  if(Number.isInteger(v) && v > 1 && v < 9) {
+    const m = 1 << v, ang = Math.PI * 2 / m;
+    cycleA.max = cycleC.max = m - 1;
+    graphCTX.font = 20 - v + 'px Arial';
+    graphCTX.clearRect(-400, -400, 800, 800);
+    for(let i = m; i--;)
+      graphCTX.fillText(i, Math.cos(i * ang) * 391, Math.sin(i * ang) * 391);
+    cycleChart.width = m;
+    cycleChart.height = m >> 1;
+    fetch(`c${v}.dat`).then(data => data.arrayBuffer()).then(buffer => {
+      // think I found a bug in fetch
+      // fetch doesn't fetch the last character of a binary file if it's a line break
+      arr = new Uint8Array(buffer);
+      let scale = 360 / arr[arr.length - 1] - 1;
+      if (scale == 359)
+        scale = 35; // line break = 0x0a = 10, 360 / 10 - 1 = 35
+      for(let i = m >> 1; i--;) {
+        for(let j = m; j--;) {
+          const val = (arr[i << v | j] - 1) * scale;
+          chartCTX.fillStyle = `hsl(${val},100%,50%)`;
+          chartCTX.fillRect(j, i, 1, 1);
+        }
+      }
+    }, error => console.warn(error));
+  }
+}
+cycleMod.oninput();
+cycleChart.onclick = e => {
+  drawGraph(e.offsetY * cycleChart.height >> 8 | 1, e.offsetX * cycleChart.width >> 10);
+}
+cycleA.oninput = cycleC.oninput = e => {
+  drawGraph(+cycleA.value, +cycleC.value);
+}
+const drawGraph = (a, c) => {
+  graphCTX.clearRect(-400, -400, 800, 800);
+  const m = cycleChart.width,
+    mask = m - 1,
+    ang = Math.PI * 2 / m,
+    //c = e.offsetX * m >> 10, // adder
+    //y = e.offsetY * cycleChart.height >> 9, // y index
+    //a = y << 1 | 1, // multiplier
+    scale = 360 / arr[(a >> 1) * m | c] - 1,
+    bitmap = new Uint8Array(m);
+  cycleA.value = a;
+  cycleC.value = c;
+  let index = 0, cycles = 0;
+  while((index = bitmap.indexOf(0, index)) >= 0) {
+    graphCTX.strokeStyle = graphCTX.fillStyle = `hsl(${cycles * scale},100%,50%)`;
+    let x = index, length = 0;
+    graphCTX.beginPath();
+    graphCTX.moveTo(Math.cos(x * ang) * 384, Math.sin(x * ang) * 384);
+    do {
+      bitmap[x] = 1;
+      ++length;
+      x = a * (x * (x + 1) >> 1) + c & mask;
+      graphCTX.fillText(x, Math.cos(x * ang) * 391, Math.sin(x * ang) * 391);
+      graphCTX.lineTo(Math.cos(x * ang) * 384, Math.sin(x * ang) * 384);
+    } while(x != index);
+    if(length == 1) {
+      graphCTX.beginPath();
+      graphCTX.arc(Math.cos(x * ang) * 391, Math.sin(x * ang) * 391, 10, 0, Math.PI * 2);
+    } else {
+      graphCTX.closePath();
+    }
+    graphCTX.stroke();
+    ++cycles;
+    ++index;
+  }
+  cycleCount.textContent = cycles;
+}
+document.addEventListener('DOMContentLoaded', function() {
+  const w = 1080, h = 640,
+    scene = new Phoria.Scene(), renderer = new Phoria.CanvasRenderer(latticeGraph);
+    scene.viewport.width = w;
+    scene.viewport.height = h;
+    scene.camera.position = {x:0, y:0, z:0};
+    scene.camera.lookat = {x:0.0, y:0.0, z:0.0};
+    scene.perspective.aspect = w / h;
+  const grid = {
+    style: {
+      drawmode: "wireframe",
+      shademode: 'plain',
+      linewidth: 1,
+      objectsortmode: "back"
+    }
+  }
+  let plane1 = Phoria.Entity.create(Object.assign(Phoria.Util.generateTesselatedPlane(2,2,0,1024), grid)),
+  plane2 = Phoria.Entity.create(Object.assign(Phoria.Util.generateTesselatedPlane(2,2,0,1024), grid)),
+  plane3 = Phoria.Entity.create(Object.assign(Phoria.Util.generateTesselatedPlane(2,2,0,1024), grid));
+  plane2.rotateX(Math.PI / 2);
+  plane3.rotateZ(Math.PI / 2);
+  //plane1.children.push(plane2, plane3);
+  scene.graph.push(plane1, plane2, plane3);
+  scene.graph.push(Phoria.DistantLight.create({
+    color: [1, 1, 1],
+    direction: {x: 0.5, y: 0.5, z: 0.5},
+    intensity: 1
+  }));
+  const lcg = LCG(761, 1013, 1023), qcg = QCG(231, 43, 97, 1029, 1), pcg2 = PCG2(763, 1013, 1023), pcg4 = PCG4(763, 1013, 1023);
+  const points = Phoria.Entity.create({
+    points: [],
+    style: {
+      color: [255, 255, 0],
+      drawmode: 'point',
+      shademode: 'plain',
+      linewidth: 256,
+      linescale: 1
+    }
+  });
+  for(let i = 1024; i--;)
+    points.points.push({ x: pcg2.next().value - 512, y: pcg2.next().value - 512, z: pcg2.next().value - 512});
+  scene.graph.push(points);
+  let pause = false, timer, r = 2000, theta = 0, phi = 0, then = 0;
+  function draw(now) {
+    r = Math.sqrt(4000000 - scene.camera.position.y ** 2);
+    if(r == 0) r = 1;
+    scene.camera.position.x = r * Math.sin(theta);
+    scene.camera.position.z = r * Math.cos(theta);
+    scene.modelView();
+    renderer.render(scene);
+    timer = requestAnimationFrame(draw);
+  }
+  timer = requestAnimationFrame(draw);
+  genlcg.onclick = e => {
+    for(let i = 1024; i--;) {
+      points.points[i].x = lcg.next().value - 512;
+      points.points[i].y = lcg.next().value - 512;
+      points.points[i].z = lcg.next().value - 512;
+    }
+    points.style.color = [0, 255, 255];
+    latticeGraph.requestPointerLock()
+  };
+  genqcg.onclick = e => {
+    for(let i = 1024; i--;) {
+      points.points[i].x = qcg.next().value - 514.5;
+      points.points[i].y = qcg.next().value - 514.5;
+      points.points[i].z = qcg.next().value - 514.5;
+      if(i == 683 || i == 341) qcg.next(); // 1029 is a multiple of 3; offset the generator to generate 3x more points
+    }
+    points.style.color = [255, 255, 255];
+    latticeGraph.requestPointerLock()
+  }
+  genpcg2.onclick = e => {
+    for(let i = 1024; i--;) {
+      points.points[i].x = pcg2.next().value - 512;
+      points.points[i].y = pcg2.next().value - 512;
+      points.points[i].z = pcg2.next().value - 512;
+    }
+    points.style.color = [255, 255, 0];
+    latticeGraph.requestPointerLock()
+  };
+  genpcg4.onclick = e => {
+    for(let i = 1024; i--;) {
+      points.points[i].x = pcg4.next().value - 512;
+      points.points[i].y = pcg4.next().value - 512;
+      points.points[i].z = pcg4.next().value - 512;
+    }
+    points.style.color = [255, 0, 255];
+    latticeGraph.requestPointerLock()
+  }
+  latticeGraph.addEventListener('click', e => document.pointerLockElement || latticeGraph.requestPointerLock());
+  latticeGraph.addEventListener('mousemove', e => {
+    points.rotateY(-e.movementX / 200)
+    plane1.rotateY(-e.movementX / 200)
+    plane2.rotateZ(e.movementX / 200)
+    plane3.rotateX(-e.movementX / 200)
+    scene.camera.position.y += e.movementY * (Math.sqrt(100 - (scene.camera.position.y / 200) ** 2) + 1);
+    if(scene.camera.position.y > 2000) scene.camera.position.y = 2000;
+    else if(scene.camera.position.y < -2000) scene.camera.position.y = -2000;
+  });
+  document.addEventListener('pointerlockchange', e => {
+    if(document.pointerLockElement) timer = requestAnimationFrame(draw);
+    else cancelAnimationFrame(timer);
+  });
+})
+  </script>
+</body>
+</html>
